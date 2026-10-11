@@ -1,0 +1,9 @@
+# Сборка на Netlify: npm run build → готовый сайт в dist.
+# Заголовки безопасности (CSP и др.) — в public/_headers, они попадают в dist при сборке.
+# Адреса страниц — через # (#feed, #messages), поэтому отдельные правила перенаправлений не нужны
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
