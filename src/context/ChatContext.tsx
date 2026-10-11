@@ -234,6 +234,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               setMessages((list) => upsertById(list, row).sort(byTime));
               const peer = row.sender_id === myId ? row.recipient_id : row.sender_id;
               loadPeople([peer]);
+              // Сообщение пришло — «печатает» гаснет сразу, как в VK, а не через 3,5 секунды
+              if (payload.eventType === "INSERT" && row.recipient_id === myId) {
+                clearTimeout(typingTimers.current[row.sender_id]);
+                setTypingIds((ids) => {
+                  if (!ids.has(row.sender_id)) return ids;
+                  const next = new Set(ids);
+                  next.delete(row.sender_id);
+                  return next;
+                });
+              }
               const incoming = row.recipient_id === myId && !row.read_at;
               if (incoming && !location.hash.startsWith("#messages")) {
                 const from = peopleRef.current[row.sender_id]?.name ?? "Новое сообщение";
@@ -271,7 +281,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           .on("broadcast", { event: "typing" }, ({ payload }) => {
             if (payload?.to !== myId) return;
             const from: string = payload.from;
-            setTypingIds((ids) => new Set(ids).add(from));
+            setTypingIds((ids) => (ids.has(from) ? ids : new Set(ids).add(from))); // без лишних перерисовок
             clearTimeout(typingTimers.current[from]);
             typingTimers.current[from] = setTimeout(() => {
               setTypingIds((ids) => {

@@ -6612,3 +6612,123 @@ body {
   border-radius: 999px;
   transition: height 0.15s ease;
 }
+
+/* =========================================================
+   «печатает» как в VK: три точки плавно подпрыгивают волной,
+   статус и пузырь появляются мягко, без рывков
+   ========================================================= */
+.typing {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  color: var(--accent);
+  animation: typing-fade 0.25s ease-out;
+}
+.typing-dots {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 0.9em;
+  padding-bottom: 0.15em;
+}
+.typing-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.35;
+  animation: typing-wave 1.2s ease-in-out infinite;
+}
+.typing-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.typing-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes typing-wave {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+@keyframes typing-fade {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+
+/* Шапка чата: «в сети» ↔ «печатает» сменяются плавно */
+.status-swap {
+  display: inline-block;
+  animation: typing-fade 0.25s ease-out;
+}
+.chat__status .typing {
+  animation: none;
+}
+
+/* Пузырь с точками внизу переписки: выплывает снизу */
+.msg.msg--typing {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px;
+  color: var(--text-secondary);
+  font-style: normal;
+  transform-origin: left bottom;
+  animation: typing-bubble-in 0.22s cubic-bezier(0.2, 0.8, 0.3, 1.2);
+}
+.msg--typing .typing-dots {
+  gap: 4px;
+  height: auto;
+  padding: 0;
+  align-items: center;
+}
+.msg--typing .typing-dots i {
+  width: 7px;
+  height: 7px;
+}
+@keyframes typing-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.85);
+  }
+}
+
+/* Кто просит меньше анимации — точки просто мерцают */
+@media (prefers-reduced-motion: reduce) {
+  .typing-dots i {
+    animation-name: typing-blink;
+  }
+  .typing,
+  .status-swap,
+  .msg.msg--typing {
+    animation: none;
+  }
+}
+@keyframes typing-blink {
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Пузырь «печатает» — поменьше, на своём месте: сразу после последнего сообщения */
+.chat__body > .msg.msg--typing {
+  align-self: flex-start;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 13px;
+}
+.chat__body > .msg--typing .typing-dots {
+  gap: 3px;
+}
+.chat__body > .msg--typing .typing-dots i {
+  width: 5px;
+  height: 5px;
+}

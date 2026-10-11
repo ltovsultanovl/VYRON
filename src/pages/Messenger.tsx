@@ -606,6 +606,24 @@ function Attachment({
   );
 }
 
+// «печатает» с тремя точками, которые плавно подпрыгивают волной — как в VK
+function TypingDots() {
+  return (
+    <span className="typing-dots" aria-hidden="true">
+      <i />
+      <i />
+      <i />
+    </span>
+  );
+}
+
+const Typing = ({ label = "печатает" }: { label?: string }) => (
+  <span className="typing">
+    {label}
+    <TypingDots />
+  </span>
+);
+
 // Одно сообщение. Мемоизировано: набор текста, «печатает…» и новые сообщения
 // не перерисовывают уже показанные (если сам объект сообщения не изменился)
 const MessageItem = memo(function MessageItem({
@@ -1200,7 +1218,7 @@ export default function Messenger<R>({
                       className={`dialog__last ${d.typing ? "dialog__last--typing" : ""}`}
                     >
                       {d.typing ? (
-                        "печатает…"
+                        <Typing />
                       ) : last ? (
                         <>
                           {last.out && (
@@ -1292,13 +1310,16 @@ export default function Messenger<R>({
               <div
                 className={`chat__status ${active.person.online || active.typing ? "chat__status--online" : ""}`}
               >
-                {active.person.isCommunity
-                  ? "Сообщество"
-                  : active.typing
-                    ? "печатает…"
-                    : active.person.online
-                      ? "в сети"
-                      : lastSeen(active.person.gender)}
+                {/* key — при смене «в сети» ↔ «печатает» статус плавно проявляется, а не прыгает */}
+                <span key={active.typing ? "typing" : active.person.online ? "online" : "away"} className="status-swap">
+                  {active.person.isCommunity
+                    ? "Сообщество"
+                    : active.typing
+                      ? <Typing />
+                      : active.person.online
+                        ? "в сети"
+                        : lastSeen(active.person.gender)}
+                </span>
               </div>
             </div>
             <button className="icon-btn" title="Поиск по сообщениям" onClick={() => setSearch({ q: "", currentId: null })}>
@@ -1374,7 +1395,11 @@ export default function Messenger<R>({
             ) : (
               <div className="chat__empty">Здесь будет история переписки</div>
             )}
-            {active.typing && <div className="msg msg--typing">печатает…</div>}
+            {active.typing && (
+              <div className="msg msg--typing" role="status" aria-label={`${active.person.name} печатает`}>
+                <TypingDots />
+              </div>
+            )}
           </div>
 
           {dragging && (
