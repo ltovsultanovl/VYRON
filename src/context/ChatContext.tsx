@@ -107,13 +107,8 @@ const isTwin = (tmp: MessageRow, row: MessageRow) =>
 
 const settle = (list: MessageRow[], row: MessageRow, tempId?: string) => {
   if (list.some((m) => m.id === row.id))
-    return upsertById(
-      tempId ? list.filter((m) => m.id !== tempId) : list,
-      row,
-    );
-  const i = list.findIndex((m) =>
-    tempId ? m.id === tempId : isTwin(m, row),
-  );
+    return upsertById(tempId ? list.filter((m) => m.id !== tempId) : list, row);
+  const i = list.findIndex((m) => (tempId ? m.id === tempId : isTwin(m, row)));
   if (i === -1) return [...list, row];
   const tmp = list[i];
   const next = [...list];
@@ -534,8 +529,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             kind: voice ? "voice" : undefined,
           });
           const path = uploaded.path;
-          if (localUrl)
-            setFileUrls((urls) => ({ ...urls, [path]: localUrl }));
+          if (localUrl) setFileUrls((urls) => ({ ...urls, [path]: localUrl }));
           setMessages((list) =>
             list.map((m) =>
               m.id === tempId ? { ...m, attachment_path: path } : m,

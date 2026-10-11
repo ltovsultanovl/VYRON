@@ -690,6 +690,11 @@ textarea {
 .comments__more:hover {
   text-decoration: underline;
 }
+.comments__more--collapse {
+  padding: 2px 0 8px;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
 .comment {
   display: flex;
   gap: 10px;

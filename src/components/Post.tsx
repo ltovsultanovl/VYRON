@@ -25,10 +25,11 @@ import { useProfile } from "../context/ProfileContext";
 import { useCommunities } from "../context/CommunitiesContext";
 import { useDropdown } from "../hooks";
 import { useBookmarks } from "../context/BookmarksContext";
-import { formatCount, formatDate, plural } from "../utils";
+import { formatCount, formatDate } from "../utils";
 
 const TEXT_LIMIT = 300;
 const COMMENTS_PREVIEW = 2;
+const COMMENTS_STEP = 10;
 
 const PersonLink = ({
   person,
@@ -193,7 +194,7 @@ export default memo(function Post({
   const { myId } = useProfile();
   const { canPublishIn, canManage } = useCommunities();
   const [commentsOpen, setCommentsOpen] = useState(post.comments.length > 0);
-  const [showAll, setShowAll] = useState(false);
+  const [shown, setShown] = useState(COMMENTS_PREVIEW);
   const [expanded, setExpanded] = useState(false);
   const [comment, setComment] = useState("");
   const [sending, setSending] = useState(false);
@@ -231,9 +232,9 @@ export default memo(function Post({
   const text =
     isLong && !expanded ? post.text.slice(0, TEXT_LIMIT).trimEnd() : post.text;
 
-  const hidden = showAll
-    ? 0
-    : Math.max(post.comments.length - COMMENTS_PREVIEW, 0);
+  const hidden = Math.max(post.comments.length - shown, 0);
+  const collapsible =
+    shown > COMMENTS_PREVIEW && post.comments.length > COMMENTS_PREVIEW;
   const visibleComments = post.comments.slice(hidden);
 
   const focusInput = () =>
@@ -257,7 +258,7 @@ export default memo(function Post({
     if (await onComment(post, mentions.encode(value))) {
       setComment("");
       mentions.reset();
-      setShowAll(true);
+      setShown((n) => n + 1);
     }
     setSending(false);
   };
@@ -382,9 +383,11 @@ export default memo(function Post({
       {commentsOpen && (
         <div className="comments">
           {hidden > 0 && (
-            <button className="comments__more" onClick={() => setShowAll(true)}>
-              Показать ещё {hidden}{" "}
-              {plural(hidden, ["комментарий", "комментария", "комментариев"])}
+            <button
+              className="comments__more"
+              onClick={() => setShown((n) => n + COMMENTS_STEP)}
+            >
+              Показать предыдущие комментарии
             </button>
           )}
           {visibleComments.map((c) => (
@@ -396,6 +399,14 @@ export default memo(function Post({
               onDelete={(target) => onDeleteComment(post, target)}
             />
           ))}
+          {collapsible && (
+            <button
+              className="comments__more comments__more--collapse"
+              onClick={() => setShown(COMMENTS_PREVIEW)}
+            >
+              Свернуть комментарии
+            </button>
+          )}
           <form className="comment-form" onSubmit={submit}>
             <MeAvatar size={32} />
             <div className="comment-form__field">
