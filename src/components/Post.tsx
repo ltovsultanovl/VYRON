@@ -351,7 +351,7 @@ export default memo(function Post({
               {mentions.list}
               <input
                 ref={inputRef}
-                placeholder="Написать комментарий... (@ — отметить друга)"
+                placeholder="Написать комментарий..."
                 maxLength={2000}
                 value={comment}
                 onChange={(e) => {
