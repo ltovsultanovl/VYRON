@@ -43,6 +43,7 @@ import {
 import { useProfile } from "./ProfileContext";
 import { useFriends } from "./FriendsContext";
 import { useSnackbar } from "../components/Snackbar";
+import { useResume } from "../hooks";
 
 type ClubInfo = Pick<CommunityBrief, "id" | "name" | "color" | "avatar">;
 
@@ -505,6 +506,33 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   );
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
+
+  // ---------- Догрузка после перерыва ----------
+  // Каналы реального времени переподключаются сами, но сообщения, пришедшие без связи, в них не попадут.
+  // Перечитываем тихо, без «Подключаемся к чату…»: отправляемые сейчас (tmp-) сохраняем
+  const resync = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(MESSAGES_LIMIT);
+      if (error) throw error;
+      const rows = (data ?? []) as MessageRow[];
+      setMessages((list) => {
+        const before = new Map(list.map((m) => [m.id, m]));
+        const pending = list.filter((m) => String(m.id).startsWith("tmp-"));
+        return [...rows.map((r) => (before.has(r.id) ? { ...before.get(r.id), ...r } : r)), ...pending].sort(byTime);
+      });
+      loadPeople(rows.map((m) => (m.sender_id === myId ? m.recipient_id : m.sender_id)));
+      fetchMyCommunityMessages(myId).then(setClubMessages, () => {});
+      fetchChatSettings().then((list) => setSettings(Object.fromEntries(list.map((c) => [c.peer, c]))), () => {});
+    } catch {
+      /* не вышло — попробуем при следующем возвращении; старые данные остаются на экране */
+    }
+  }, [myId, loadPeople]);
+
+  useResume(() => (status === "error" ? retry() : status === "ready" && resync()));
 
   // ---------- Настройки чатов: сразу на экране, затем на сервер; при ошибке — назад ----------
   const changeSetting = useCallback(

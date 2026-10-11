@@ -174,6 +174,7 @@ interface SupabaseError {
 export const explainError = (error: unknown): string => {
   const err = error as SupabaseError | null | undefined;
   const text = err?.message ?? String(error);
+  if (/timed? ?out|TimeoutError|aborted/i.test(text)) return "Сервер долго не отвечает. Проверьте интернет и попробуйте ещё раз";
   if (/fetch|network|Load failed/i.test(text)) return "Нет связи с сервером. Проверьте интернет и попробуйте ещё раз";
   if (/email rate limit/i.test(text)) return "Лимит писем исчерпан: бесплатная почта Supabase отправляет лишь пару писем в час. Попробуйте позже";
   const wait = text.match(/after (\d+) seconds?/i);
@@ -539,9 +540,11 @@ export const fetchMyCommunityMessages = async (myId: string): Promise<CommunityM
       .from("community_messages")
       .select(`*, community:communities(${COMMUNITY_BRIEF})`)
       .eq("user_id", myId)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
       .limit(1000),
-  ).map(toCommunityMessage);
+  )
+    .reverse() // берём 1000 последних, показываем по порядку
+    .map(toCommunityMessage);
 
 // Входящие сообщества — для его руководителей
 export const fetchCommunityInbox = async (communityId: number): Promise<CommunityMessageRow[]> =>
@@ -550,9 +553,11 @@ export const fetchCommunityInbox = async (communityId: number): Promise<Communit
       .from("community_messages")
       .select(`*, user:profiles!community_messages_user_id_fkey(${PERSON_FIELDS})`)
       .eq("community_id", communityId)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
       .limit(2000),
-  ).map((r) => ({ ...r, community: undefined, user: toPerson(r.user) }));
+  )
+    .reverse()
+    .map((r) => ({ ...r, community: undefined, user: toPerson(r.user) }));
 
 export const sendCommunityMessage = async ({
   communityId,

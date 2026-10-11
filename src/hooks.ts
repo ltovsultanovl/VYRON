@@ -279,3 +279,31 @@ export function useDebounced<T>(value: T, delay: number): T {
   }, [value, delay]);
   return debounced;
 }
+
+// Вернулись в сеть или на вкладку после перерыва (ноутбук спал, телефон был в кармане) —
+// повод догрузить то, что пришло, пока соединение было потеряно
+export function useResume(onResume: () => void, minAwayMs = 30_000) {
+  const ref = useRef(onResume);
+  useEffect(() => {
+    ref.current = onResume;
+  });
+  useEffect(() => {
+    let hiddenAt = document.visibilityState === "hidden" ? Date.now() : 0;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAt = Date.now();
+        return;
+      }
+      const away = hiddenAt ? Date.now() - hiddenAt : 0;
+      hiddenAt = 0;
+      if (away >= minAwayMs) ref.current();
+    };
+    const onOnline = () => ref.current();
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("online", onOnline);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", onOnline);
+    };
+  }, [minAwayMs]);
+}

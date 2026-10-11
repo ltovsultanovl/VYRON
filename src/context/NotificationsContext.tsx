@@ -4,6 +4,7 @@ import { useProfile } from "./ProfileContext";
 import { useSnackbar } from "../components/Snackbar";
 import { summary } from "../components/notifications/describe";
 import * as api from "../api";
+import { useResume } from "../hooks";
 import type { AppNotification } from "../types";
 
 interface NotificationsValue {
@@ -74,6 +75,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       supabase.removeChannel(channel);
     };
   }, [myId, attempt, showSnackbar]);
+
+  // Вернулись после перерыва — перечитываем: пока не было связи, что-то могло прийти
+  useResume(() => setAttempt((a) => a + 1));
 
   const markAllRead = useCallback(() => {
     const now = new Date().toISOString();
