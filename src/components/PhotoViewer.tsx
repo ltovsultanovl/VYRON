@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import ConfirmModal from "./ConfirmModal";
 import EmojiPicker from "./EmojiPicker";
+import { MentionText, useMentions } from "./Mentions";
 import ShareModal from "./ShareModal";
 import MoveToAlbumModal from "./photos/MoveToAlbumModal";
 import Avatar from "./Avatar";
@@ -164,6 +165,7 @@ export default function PhotoViewer({
   const href = ownerHref ?? `#user/${owner.id}`;
   const commentsRef = useRef<HTMLDivElement>(null);
   const commentInputRef = useRef<HTMLInputElement>(null);
+  const mentions = useMentions(comment, setComment, commentInputRef);
   const count = photos.length;
   const photo = photos[index];
 
@@ -207,10 +209,11 @@ export default function PhotoViewer({
     const text = comment.trim();
     if (!text || sending) return;
     setSending(true);
-    const ok = await onComment(photo, text);
+    const ok = await onComment(photo, mentions.encode(text));
     setSending(false);
     if (!ok) return;
     setComment("");
+    mentions.reset();
     // Прокручиваем к новому комментарию
     requestAnimationFrame(() => {
       const el = commentsRef.current;
@@ -349,7 +352,9 @@ export default function PhotoViewer({
                       <a href={`#user/${c.author.id}`} className="comment__name" onClick={onClose}>
                         {c.author.name}
                       </a>
-                      <div className="comment__text">{c.text}</div>
+                      <div className="comment__text">
+                        <MentionText text={c.text} />
+                      </div>
                       <div className="comment__meta">
                         <span>{formatDate(c.createdAt)}</span>
                         {(isMine || c.author.id === myId) && (
@@ -366,14 +371,22 @@ export default function PhotoViewer({
 
             <form className="viewer__form" onSubmit={submit}>
               <MeAvatar size={32} />
-              <input
-                ref={commentInputRef}
-                placeholder="Написать комментарий..."
-                maxLength={2000}
-                disabled={sending}
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-              />
+              <div className="viewer__input">
+                {mentions.list}
+                <input
+                  ref={commentInputRef}
+                  placeholder="Написать комментарий..."
+                  maxLength={2000}
+                  disabled={sending}
+                  value={comment}
+                  onChange={(e) => {
+                    setComment(e.target.value);
+                    mentions.detect();
+                  }}
+                  onSelect={mentions.detect}
+                  onKeyDown={mentions.onKeyDown}
+                />
+              </div>
               <EmojiPicker inputRef={commentInputRef} value={comment} onChange={setComment} size={20} />
               {comment.trim() && (
                 <button className="icon-btn icon-btn--sm comment-form__send" title="Отправить">

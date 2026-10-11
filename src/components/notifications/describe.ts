@@ -41,6 +41,8 @@ const VERBS: Record<NotificationType, [string, string, string]> = {
   community_invite: ["приглашает", "приглашает", "приглашают"],
   community_accepted: ["", "", ""],
   post_approved: ["", "", ""],
+  mention: ["упомянул", "упомянула", "упомянули"],
+  comment_reply: ["ответил", "ответила", "ответили"],
 };
 
 const WHAT: Partial<Record<NotificationType, string>> = {
@@ -73,6 +75,13 @@ export function describe(group: NotificationGroup): { others: string; action: st
       return { others: "", action: `Ваша заявка в ${community} одобрена` };
     case "post_approved":
       return { others: "", action: `Ваша новость опубликована в ${community}` };
+    case "comment_reply":
+      return { others, action: `${v} на ваш комментарий` };
+    case "mention":
+      return {
+        others,
+        action: `${v} вас в комментарии ${latest.photo ? "к фотографии" : latest.video ? "к видео" : "к записи"}`,
+      };
     default:
       return { others, action: `${v} ${WHAT[type] ?? ""}` };
   }
@@ -103,7 +112,8 @@ export type NotificationFilter = "all" | "replies" | "likes" | "friends" | "comm
 
 export const FILTERS: Record<NotificationFilter, (t: NotificationType) => boolean> = {
   all: () => true,
-  replies: (t) => t === "post_comment" || t === "photo_comment" || t === "video_comment" || t === "wall_post",
+  replies: (t) =>
+    t === "post_comment" || t === "photo_comment" || t === "video_comment" || t === "wall_post" || t === "mention" || t === "comment_reply",
   likes: (t) => LIKES.includes(t),
   friends: (t) => t === "friend_request" || t === "friend_accepted",
   communities: (t) => t === "community_invite" || t === "community_accepted" || t === "post_approved",

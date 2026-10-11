@@ -18,6 +18,8 @@ const BADGES: Record<NotificationType, { Icon: Icon; tone: string }> = {
   photo_comment: { Icon: CommentIcon, tone: "comment" },
   video_comment: { Icon: CommentIcon, tone: "comment" },
   wall_post: { Icon: PencilIcon, tone: "comment" },
+  mention: { Icon: CommentIcon, tone: "comment" },
+  comment_reply: { Icon: CommentIcon, tone: "comment" },
   friend_request: { Icon: FriendsIcon, tone: "friend" },
   friend_accepted: { Icon: FriendsIcon, tone: "friend" },
   community_invite: { Icon: GroupsIcon, tone: "community" },
@@ -97,7 +99,11 @@ export default function NotificationItem({
     ? { name: n.community.name, color: n.community.color, avatar: n.community.avatar }
     : n.actor;
   const preview = n.photo?.src ?? n.video?.poster ?? n.post?.image ?? null;
-  const quote = n.type.endsWith("_comment") || n.type === "wall_post" ? n.text : "";
+  const quote = n.type.endsWith("_comment") || n.type === "wall_post" || n.type === "mention"
+      ? n.text
+      : n.type === "comment_reply"
+        ? n.text.replace(/^[^,]{1,100},\s*/, "") // «Анна Смирнова, согласен» → «согласен»: кому ответ, и так ясно
+        : "";
   const href = target(n, myId);
 
   return (

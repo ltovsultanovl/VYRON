@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import Avatar from "../Avatar";
 import MeAvatar from "../MeAvatar";
 import EmojiPicker from "../EmojiPicker";
+import { MentionText, useMentions } from "../Mentions";
 import ShareModal from "../ShareModal";
 import ConfirmModal from "../ConfirmModal";
 import EditVideoModal from "./EditVideoModal";
@@ -58,6 +59,7 @@ export default function VideoViewer({
   const [modal, setModal] = useState<"share" | "edit" | "delete" | null>(null);
   const [failed, setFailed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const mentions = useMentions(comment, setComment, inputRef);
   const commentsRef = useRef<HTMLDivElement>(null);
   useScrollLock();
 
@@ -111,7 +113,8 @@ export default function VideoViewer({
     if (!text || sending || !video) return;
     setSending(true);
     try {
-      const c = await api.addVideoComment(id, text);
+      const c = await api.addVideoComment(id, mentions.encode(text));
+      mentions.reset();
       comments.setData((list) => [...(list ?? []), c]);
       update({ commentsCount: video.commentsCount + 1 });
       setComment("");
@@ -290,7 +293,9 @@ export default function VideoViewer({
                         >
                           {c.author.name}
                         </a>
-                        <div className="comment__text">{c.text}</div>
+                        <div className="comment__text">
+                          <MentionText text={c.text} />
+                        </div>
                         <div className="comment__meta">
                           <span>{formatDate(c.createdAt)}</span>
                           {(mine || c.author.id === myId) && (
@@ -309,14 +314,22 @@ export default function VideoViewer({
               </div>
               <form className="viewer__form" onSubmit={submit}>
                 <MeAvatar size={32} />
-                <input
-                  ref={inputRef}
-                  placeholder="Написать комментарий..."
-                  maxLength={2000}
-                  disabled={sending}
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                />
+                <div className="viewer__input">
+                  {mentions.list}
+                  <input
+                    ref={inputRef}
+                    placeholder="Написать комментарий..."
+                    maxLength={2000}
+                    disabled={sending}
+                    value={comment}
+                    onChange={(e) => {
+                      setComment(e.target.value);
+                      mentions.detect();
+                    }}
+                    onSelect={mentions.detect}
+                    onKeyDown={mentions.onKeyDown}
+                  />
+                </div>
                 <EmojiPicker
                   inputRef={inputRef}
                   value={comment}

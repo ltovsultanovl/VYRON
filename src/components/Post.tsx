@@ -4,6 +4,7 @@ import Avatar from "./Avatar";
 import MeAvatar from "./MeAvatar";
 import ConfirmModal from "./ConfirmModal";
 import EmojiPicker from "./EmojiPicker";
+import { MentionText, useMentions } from "./Mentions";
 import ShareModal from "./ShareModal";
 import {
   BookmarkFilledIcon,
@@ -119,7 +120,7 @@ function Comment({
 }: {
   comment: CommentType;
   canDelete: boolean;
-  onReply: (firstName: string) => void;
+  onReply: (author: Person) => void;
   onDelete: (comment: CommentType) => void;
 }) {
   const { myId } = useProfile();
@@ -132,11 +133,13 @@ function Comment({
       </a>
       <div className="comment__body">
         <PersonLink person={comment.author} className="comment__name" />
-        <div className="comment__text">{comment.text}</div>
+        <div className="comment__text">
+          <MentionText text={comment.text} />
+        </div>
         <div className="comment__meta">
           <span>{formatDate(comment.createdAt)}</span>
           {!mine && (
-            <button className="comment__reply" onClick={() => onReply(comment.author.firstName)}>
+            <button className="comment__reply" onClick={() => onReply(comment.author)}>
               Ответить
             </button>
           )}
@@ -181,6 +184,7 @@ export default memo(function Post({
   const [imageFailed, setImageFailed] = useState(false);
   const [sharing, setSharing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const mentions = useMentions(comment, setComment, inputRef);
 
   const { author, owner, community } = post;
   const onOtherWall = owner && owner.id !== author.id;
@@ -207,9 +211,10 @@ export default memo(function Post({
     if (!commentsOpen) focusInput();
   };
 
-  const reply = (firstName: string) => {
-    setComment(`${firstName}, `);
-    focusInput();
+  // «Ответить» отмечает автора комментария — ему придёт уведомление
+  const reply = (author: Person) => {
+    if (!commentsOpen) setCommentsOpen(true);
+    mentions.replyTo(author);
   };
 
 
@@ -218,8 +223,9 @@ export default memo(function Post({
     const value = comment.trim();
     if (!value || sending) return;
     setSending(true);
-    if (await onComment(post, value)) {
+    if (await onComment(post, mentions.encode(value))) {
       setComment("");
+      mentions.reset();
       setShowAll(true);
     }
     setSending(false);
@@ -342,12 +348,18 @@ export default memo(function Post({
           <form className="comment-form" onSubmit={submit}>
             <MeAvatar size={32} />
             <div className="comment-form__field">
+              {mentions.list}
               <input
                 ref={inputRef}
-                placeholder="Написать комментарий..."
+                placeholder="Написать комментарий... (@ — отметить друга)"
                 maxLength={2000}
                 value={comment}
-                onChange={(e) => setComment(e.target.value)}
+                onChange={(e) => {
+                  setComment(e.target.value);
+                  mentions.detect();
+                }}
+                onSelect={mentions.detect}
+                onKeyDown={mentions.onKeyDown}
               />
               <EmojiPicker inputRef={inputRef} value={comment} onChange={setComment} size={20} />
               <button

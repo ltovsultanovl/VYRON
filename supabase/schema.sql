@@ -1446,7 +1446,9 @@ as $$
 begin
   if p_user is null or p_user = p_actor then return; end if;
   insert into public.notifications (user_id, actor_id, type, post_id, photo_id, video_id, community_id, comment_id, text)
-  values (p_user, p_actor, p_type, p_post, p_photo, p_video, p_community, p_comment, left(coalesce(p_text, ''), 200));
+  values (p_user, p_actor, p_type, p_post, p_photo, p_video, p_community, p_comment,
+    -- отметки «[id…|Анна Смирнова]» в тексте уведомления — просто имена
+    left(regexp_replace(coalesce(p_text, ''), '\[id[0-9a-f-]{36}\|([^\]]{1,100})\]', '\1', 'g'), 200));
 end;
 $$;
 
@@ -1478,9 +1480,12 @@ begin
     return old;
   end if;
   select * into p from public.posts where id = new.post_id;
-  perform public.notify(p.author_id, new.author_id, 'post_comment', p_post => p.id, p_comment => new.id, p_text => new.text);
+  -- Ответ на комментарий автора записи: ему придёт «ответил на ваш комментарий», а не это
+  if p.author_id is distinct from public.reply_target(new.text) then
+    perform public.notify(p.author_id, new.author_id, 'post_comment', p_post => p.id, p_comment => new.id, p_text => new.text);
+  end if;
   -- Хозяин стены тоже узнаёт о комментарии к чужой записи у себя
-  if p.owner_id is not null and p.owner_id <> p.author_id then
+  if p.owner_id is not null and p.owner_id <> p.author_id and p.owner_id is distinct from public.reply_target(new.text) then
     perform public.notify(p.owner_id, new.author_id, 'post_comment', p_post => p.id, p_comment => new.id, p_text => new.text);
   end if;
   return new;
@@ -1529,8 +1534,8 @@ create or replace function public.notify_photo_comment() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
   if tg_op = 'INSERT' then
-    perform public.notify((select owner_id from public.photos where id = new.photo_id), new.author_id, 'photo_comment',
-      p_photo => new.photo_id, p_comment => new.id, p_text => new.text);
+    perform public.notify(nullif((select owner_id from public.photos where id = new.photo_id), public.reply_target(new.text)),
+      new.author_id, 'photo_comment', p_photo => new.photo_id, p_comment => new.id, p_text => new.text);
     return new;
   end if;
   delete from public.notifications where type = 'photo_comment' and comment_id = old.id;
@@ -1561,8 +1566,8 @@ create or replace function public.notify_video_comment() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
   if tg_op = 'INSERT' then
-    perform public.notify((select owner_id from public.videos where id = new.video_id), new.author_id, 'video_comment',
-      p_video => new.video_id, p_comment => new.id, p_text => new.text);
+    perform public.notify(nullif((select owner_id from public.videos where id = new.video_id), public.reply_target(new.text)),
+      new.author_id, 'video_comment', p_video => new.video_id, p_comment => new.id, p_text => new.text);
     return new;
   end if;
   delete from public.notifications where type = 'video_comment' and comment_id = old.id;
@@ -2101,3 +2106,90 @@ $$;
 
 revoke execute on function public.clear_chat_for_me(uuid) from public, anon;
 grant execute on function public.clear_chat_for_me(uuid) to authenticated;
+
+-- =========================================================
+-- Отметки в комментариях, как в VK: «@Анна» → в тексте хранится «[id<uuid>|Анна Смирнова]».
+-- Отмеченному приходит уведомление «упомянул(а) вас в комментарии».
+-- Не дублируем тем, кто и так узнал о комментарии (автор записи, хозяин стены, владелец фото/видео),
+-- не шлём себе, заблокировавшим автора и больше 10 людям за раз
+-- =========================================================
+alter table public.notifications drop constraint if exists notifications_type_check;
+alter table public.notifications add constraint notifications_type_check check (type in (
+  'post_like', 'post_comment', 'wall_post', 'post_approved',
+  'photo_like', 'photo_comment', 'video_like', 'video_comment',
+  'friend_request', 'friend_accepted', 'community_invite', 'community_accepted',
+  'mention', 'comment_reply'
+));
+
+-- Ответ на комментарий: текст начинается с отметки и запятой — «[id<uuid>|Анна Смирнова], …»
+-- (так его пишет кнопка «Ответить»). Возвращает, кому ответили
+create or replace function public.reply_target(t text)
+returns uuid
+language sql immutable set search_path = public
+as $$
+  select (regexp_match(coalesce(t, ''), '^\[id([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\|[^\]]{1,100}\],'))[1]::uuid;
+$$;
+
+create or replace function public.notify_comment_mentions() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  row_data jsonb;
+  post bigint;
+  photo bigint;
+  video bigint;
+  already uuid[] := '{}';
+  target uuid;
+begin
+  row_data := to_jsonb(coalesce(new, old));
+  post := (row_data ->> 'post_id')::bigint;
+  photo := (row_data ->> 'photo_id')::bigint;
+  video := (row_data ->> 'video_id')::bigint;
+
+  if tg_op = 'DELETE' then
+    delete from public.notifications
+      where type in ('mention', 'comment_reply') and comment_id = old.id
+        and post_id is not distinct from post and photo_id is not distinct from photo and video_id is not distinct from video;
+    return old;
+  end if;
+
+  if post is not null then
+    select array[author_id, owner_id] into already from public.posts where id = post;
+  elsif photo is not null then
+    select array[owner_id] into already from public.photos where id = photo;
+  elsif video is not null then
+    select array[owner_id] into already from public.videos where id = video;
+  end if;
+
+  for target in
+    select distinct m[1]::uuid
+    from regexp_matches(new.text, '\[id([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\|', 'g') as m
+    limit 10
+  loop
+    continue when target = new.author_id;
+    continue when not exists (select 1 from public.profiles where id = target);
+    continue when public.has_blocked(target, new.author_id);
+    if target = public.reply_target(new.text) then
+      -- Ответили на его комментарий — «ответил на ваш комментарий», даже автору записи
+      perform public.notify(target, new.author_id, 'comment_reply',
+        p_post => post, p_photo => photo, p_video => video, p_comment => new.id, p_text => new.text);
+    elsif not target = any(already) then
+      perform public.notify(target, new.author_id, 'mention',
+        p_post => post, p_photo => photo, p_video => video, p_comment => new.id, p_text => new.text);
+    end if;
+  end loop;
+  return new;
+end $$;
+
+revoke execute on function public.notify_comment_mentions() from public, anon, authenticated;
+
+drop trigger if exists post_comments_mentions on public.post_comments;
+create trigger post_comments_mentions after insert or delete on public.post_comments
+  for each row execute function public.notify_comment_mentions();
+
+drop trigger if exists photo_comments_mentions on public.photo_comments;
+create trigger photo_comments_mentions after insert or delete on public.photo_comments
+  for each row execute function public.notify_comment_mentions();
+
+drop trigger if exists video_comments_mentions on public.video_comments;
+create trigger video_comments_mentions after insert or delete on public.video_comments
+  for each row execute function public.notify_comment_mentions();

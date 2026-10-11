@@ -362,7 +362,9 @@ export type NotificationType =
   | "friend_request"
   | "friend_accepted"
   | "community_invite"
-  | "community_accepted";
+  | "community_accepted"
+  | "mention" // отметили в комментарии
+  | "comment_reply"; // ответили на ваш комментарий
 
 export interface AppNotification {
   id: number;
