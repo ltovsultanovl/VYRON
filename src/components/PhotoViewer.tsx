@@ -207,7 +207,9 @@ export default function PhotoViewer({
     mentions.reset();
     requestAnimationFrame(() => {
       const el = commentsRef.current;
-      if (el) el.scrollTop = el.scrollHeight;
+      if (!el) return;
+      if (el.scrollHeight > el.clientHeight) el.scrollTop = el.scrollHeight;
+      else el.lastElementChild?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     });
   };
 

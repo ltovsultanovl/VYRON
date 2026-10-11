@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from "react";
-import type { AttachmentType, ChatPeer, Shared, Track, VoiceMeta } from "../types";
+import type { AttachmentMeta, AttachmentType, ChatPeer, Shared, Track, VoiceMeta } from "../types";
 import { usePlayer } from "../context/PlayerContext";
 import { createPortal } from "react-dom";
 import Avatar from "../components/Avatar";
@@ -67,12 +67,13 @@ export type MessageState = "pending" | "sent" | "read" | "failed";
 export interface ChatAttachment {
   type: AttachmentType;
   name?: string | null;
-  meta?: VoiceMeta | null;
+  meta?: AttachmentMeta | null;
   url: string | null;
 }
 
 export interface ViewMessage<R = unknown> {
   id: number | string;
+  key?: string;
   out: boolean;
   text: string;
   summary?: string;
@@ -526,6 +527,20 @@ function AudioAttachment({ attachment, pending, trackId }: { attachment: ChatAtt
   );
 }
 
+const PHOTO_MAX_WIDTH = 340;
+const PHOTO_MAX_HEIGHT = 380;
+const PHOTO_MIN_WIDTH = 140;
+
+function photoBox(meta?: AttachmentMeta | null): React.CSSProperties | undefined {
+  const { width, height } = meta ?? {};
+  if (!width || !height) return undefined;
+  const scale = Math.min(1, PHOTO_MAX_WIDTH / width, PHOTO_MAX_HEIGHT / height);
+  return {
+    width: Math.max(PHOTO_MIN_WIDTH, Math.round(width * scale)),
+    aspectRatio: `${width} / ${height}`,
+  };
+}
+
 function Attachment({
   attachment,
   pending,
@@ -539,8 +554,9 @@ function Attachment({
   trackId?: number;
   voice?: { out: boolean; listened: boolean; onListened: () => void };
 }) {
-  const { type, url } = attachment;
+  const { type, url, meta } = attachment;
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
   if (type === "audio")
     return <AudioAttachment attachment={attachment} pending={pending} trackId={trackId} />;
   if (type === "voice")
@@ -571,13 +587,16 @@ function Attachment({
         <img
           src={url}
           alt=""
+          className={`msg__img ${loadedUrl === url ? "" : "msg__img--loading"}`}
+          style={photoBox(meta)}
           onClick={() => onOpen(url)}
           loading="lazy"
+          onLoad={() => setLoadedUrl(url)}
           onError={() => setFailedUrl(url)}
         />
       )}
-      {pending && url && (
-        <div className="msg__media-overlay">
+      {url && !failed && (
+        <div className={`msg__media-overlay ${pending ? "" : "msg__media-overlay--hidden"}`}>
           <div className="chat-status__spinner" />
         </div>
       )}
@@ -625,7 +644,10 @@ const MessageItem = memo(function MessageItem({
 }) {
   const visual = m.attachment?.type === "image" ? "image" : m.attachment?.type === "video" ? "video" : null;
   return (
-    <div className={`chat__item ${current ? "chat__item--current" : ""}`} data-msg-id={m.id}>
+    <div
+      className={`chat__item ${current ? "chat__item--current" : ""} ${visual && m.state === "pending" ? "chat__item--new" : ""}`}
+      data-msg-id={m.id}
+    >
       {day && <div className="chat__day">{day}</div>}
       <div className={`msg-line ${m.out ? "msg-line--out" : ""}`}>
         <div
@@ -1318,7 +1340,7 @@ export default function Messenger<R>({
                   i === 0 || day !== (active.messages[i - 1].day ?? "Сегодня");
                 return (
                   <MessageItem
-                    key={m.id}
+                    key={m.key ?? m.id}
                     message={m}
                     day={showDay ? day : null}
                     deletable={!!onDelete && m.deletable !== false}

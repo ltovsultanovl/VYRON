@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import Avatar from "../components/Avatar";
 import Composer from "../components/Composer";
+import EmojiPicker from "../components/EmojiPicker";
 import PostList from "../components/PostList";
 import AvatarUploadModal from "../components/AvatarUploadModal";
 import ProfileDetailsModal from "../components/ProfileDetailsModal";
@@ -42,7 +44,15 @@ import { useFriends } from "../context/FriendsContext";
 import { useChatActions, useOnlineIds } from "../context/ChatContext";
 import { bg } from "../data";
 import { formatEducation, fullName } from "../profile";
-import { useDismiss, useDropdown, useFileDrop, useFilePicker } from "../hooks";
+import {
+  useDismiss,
+  useDropdown,
+  useFileDrop,
+  useFilePicker,
+  useKeyboardInset,
+  useMediaQuery,
+  useScrollLock,
+} from "../hooks";
 import {
   useFriendsOf,
   usePhotos,
@@ -160,10 +170,8 @@ function ProfileAvatar({
   owner: Person;
   album: PhotoAlbum;
 }) {
-  const { updateProfile } = useProfile();
   const onlineIds = useOnlineIds();
-  const showSnackbar = useSnackbar();
-  const [modal, setModal] = useState<"upload" | "delete" | null>(null);
+  const [modal, setModal] = useState<"upload" | null>(null);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const avatarIndex = album.photos.findIndex((p) => p.src === profile.avatar);
@@ -192,9 +200,7 @@ function ProfileAvatar({
 
   return (
     <div className="profile-info__avatar">
-      <div
-        className={`avatar-frame ${editable && profile.avatar ? "avatar-frame--editable" : ""}`}
-      >
+      <div className="avatar-frame">
         <button
           className="avatar-open"
           onClick={open}
@@ -220,15 +226,6 @@ function ProfileAvatar({
             </span>
           )}
         </button>
-
-        {editable && profile.avatar && (
-          <div className="avatar-actions">
-            <button onClick={() => setModal("upload")}>
-              Обновить фотографию
-            </button>
-            <button onClick={() => setModal("delete")}>Удалить</button>
-          </div>
-        )}
       </div>
 
       {editable && (
@@ -264,32 +261,156 @@ function ProfileAvatar({
         />
       )}
 
-      {modal === "delete" && (
-        <ConfirmModal
-          title="Удаление фотографии"
-          text="Фотография исчезнет с аватара. В разделе «Фото» она останется — удалить её совсем можно там."
-          onConfirm={async () => {
-            setModal(null);
-            const old = profile.avatar;
-            if (await updateProfile({ avatar: null })) {
-              removeOld(old, "avatars");
-              showSnackbar("Фотография убрана с аватара");
-            }
-          }}
-          onClose={() => setModal(null)}
-        />
-      )}
     </div>
+  );
+}
+
+const SHEET_DISMISS_DRAG = 90;
+
+function StatusSheet({
+  initial,
+  onSave,
+  onClose,
+}: {
+  initial: string;
+  onSave: (status: string) => void;
+  onClose: () => void;
+}) {
+  useScrollLock();
+  const keyboard = useKeyboardInset();
+  const [value, setValue] = useState(initial);
+  const [closing, setClosing] = useState(false);
+  const [drag, setDrag] = useState(0);
+  const dragFrom = useRef<number | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const pending = useRef<string | null>(null);
+
+  const close = useCallback((save: string | null = null) => {
+    pending.current = save;
+    setClosing(true);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [close]);
+
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
+
+  const finish = () => {
+    if (!closing) return;
+    if (pending.current !== null) onSave(pending.current);
+    onClose();
+  };
+
+  const trimmed = value.trim();
+  const left = STATUS_LIMIT - value.length;
+
+  return createPortal(
+    <div
+      className={`status-sheet ${closing ? "status-sheet--closing" : ""}`}
+      style={{ "--kb": `${keyboard}px` } as CSSProperties}
+      onMouseDown={(e) => e.target === e.currentTarget && close()}
+      onAnimationEnd={(e) => e.target === e.currentTarget && finish()}
+    >
+      <form
+        className={`status-sheet__panel ${drag ? "status-sheet__panel--drag" : ""}`}
+        style={drag ? { transform: `translateY(${drag}px)` } : undefined}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Статус"
+        onSubmit={(e) => {
+          e.preventDefault();
+          close(trimmed === initial ? null : trimmed);
+        }}
+      >
+        <div
+          className="status-sheet__head"
+          onTouchStart={(e) => (dragFrom.current = e.touches[0].clientY)}
+          onTouchMove={(e) => {
+            if (dragFrom.current === null) return;
+            setDrag(Math.max(0, e.touches[0].clientY - dragFrom.current));
+          }}
+          onTouchEnd={() => {
+            dragFrom.current = null;
+            if (drag > SHEET_DISMISS_DRAG) close();
+            else setDrag(0);
+          }}
+        >
+          <div className="sheet__grip" />
+          <div className="status-sheet__title-row">
+            <h2 className="status-sheet__title">Статус</h2>
+            <button
+              type="button"
+              className="icon-btn status-sheet__close"
+              aria-label="Закрыть"
+              onClick={() => close()}
+            >
+              <CloseIcon size={22} />
+            </button>
+          </div>
+          <p className="status-sheet__hint">Его увидят все, кто откроет вашу страницу</p>
+        </div>
+
+        <div className="status-sheet__field">
+          <textarea
+            ref={inputRef}
+            rows={1}
+            autoFocus
+            value={value}
+            maxLength={STATUS_LIMIT}
+            enterKeyHint="done"
+            placeholder="Что у вас нового?"
+            aria-label="Статус"
+            onFocus={(e) => {
+              const end = e.currentTarget.value.length;
+              e.currentTarget.setSelectionRange(end, end);
+            }}
+            onChange={(e) => setValue(e.target.value.replace(/\s*\n\s*/g, " "))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                e.currentTarget.form?.requestSubmit();
+              }
+            }}
+          />
+          <EmojiPicker inputRef={inputRef} value={value} onChange={setValue} placement="top" size={22} />
+        </div>
+        <div className={`status-sheet__counter ${left <= 10 ? "status-sheet__counter--low" : ""}`}>
+          {value.length} / {STATUS_LIMIT}
+        </div>
+
+        <div className="status-sheet__actions">
+          {initial && (
+            <button type="button" className="btn btn--neutral status-sheet__clear" onClick={() => close("")}>
+              Очистить
+            </button>
+          )}
+          <button className="btn status-sheet__save" disabled={trimmed === initial}>
+            Сохранить
+          </button>
+        </div>
+      </form>
+    </div>,
+    document.body,
   );
 }
 
 function Status({ profile, editable }: { profile: ProfileType; editable: boolean }) {
   const { updateProfile } = useProfile();
+  const phone = useMediaQuery("(max-width: 760px)");
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(profile.status);
-  const ref = useRef(null);
+  const ref = useRef<HTMLFormElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const cancel = useCallback(() => setEditing(false), []);
-  useDismiss(ref, editing, cancel);
+  useDismiss(ref, editing && !phone, cancel);
 
   if (!editable) {
     return profile.status ? (
@@ -305,39 +426,53 @@ function Status({ profile, editable }: { profile: ProfileType; editable: boolean
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setEditing(false);
-    await updateProfile({ status: value.trim() });
+    const next = value.trim();
+    if (next !== profile.status) await updateProfile({ status: next });
   };
 
-  if (!editing) {
-    return (
-      <div
-        className={`profile-info__status status ${profile.status ? "" : "status--empty"}`}
-        onClick={start}
-        title="Изменить статус"
-      >
-        {profile.status || "Установить статус"}
-      </div>
-    );
-  }
-
   return (
-    <form className="status-editor" ref={ref} onSubmit={save}>
-      <input
-        className="field"
-        autoFocus
-        value={value}
-        maxLength={STATUS_LIMIT}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder="Введите статус"
-      />
-      <div className="status-editor__footer">
-        <span className="muted">{STATUS_LIMIT - value.length}</span>
-        <button type="button" className="btn btn--tertiary" onClick={cancel}>
-          Отмена
-        </button>
-        <button className="btn">Сохранить</button>
-      </div>
-    </form>
+    <div className="profile-info__status status-wrap">
+      <button
+        type="button"
+        className={`status ${profile.status ? "" : "status--empty"}`}
+        onClick={start}
+        aria-expanded={editing}
+      >
+        {profile.status || "изменить статус"}
+      </button>
+      {editing && phone && (
+        <StatusSheet
+          initial={profile.status}
+          onSave={(status) => updateProfile({ status })}
+          onClose={cancel}
+        />
+      )}
+      {editing && !phone && (
+        <form className="status-editor" ref={ref} onSubmit={save}>
+          <div className="status-editor__field">
+            <input
+              ref={inputRef}
+              className="field"
+              autoFocus
+              value={value}
+              maxLength={STATUS_LIMIT}
+              onChange={(e) => setValue(e.target.value)}
+              onFocus={(e) => e.currentTarget.select()}
+              placeholder="Введите статус"
+              aria-label="Статус"
+            />
+            <EmojiPicker
+              inputRef={inputRef}
+              value={value}
+              onChange={setValue}
+              placement="bottom"
+              size={20}
+            />
+          </div>
+          <button className="btn status-editor__save">Сохранить</button>
+        </form>
+      )}
+    </div>
   );
 }
 

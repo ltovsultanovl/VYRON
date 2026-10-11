@@ -96,6 +96,52 @@ const MESSAGES_LIMIT = 1000;
 const isPresent = () =>
   document.visibilityState === "visible" && navigator.onLine;
 
+const isTwin = (tmp: MessageRow, row: MessageRow) =>
+  tmp.pending === true &&
+  String(tmp.id).startsWith("tmp-") &&
+  tmp.sender_id === row.sender_id &&
+  tmp.recipient_id === row.recipient_id &&
+  tmp.text === row.text &&
+  (tmp.attachment_path ?? null) === (row.attachment_path ?? null) &&
+  (tmp.shared_id ?? null) === (row.shared_id ?? null);
+
+const settle = (list: MessageRow[], row: MessageRow, tempId?: string) => {
+  if (list.some((m) => m.id === row.id))
+    return upsertById(
+      tempId ? list.filter((m) => m.id !== tempId) : list,
+      row,
+    );
+  const i = list.findIndex((m) =>
+    tempId ? m.id === tempId : isTwin(m, row),
+  );
+  if (i === -1) return [...list, row];
+  const tmp = list[i];
+  const next = [...list];
+  next[i] = {
+    ...tmp,
+    ...row,
+    pending: false,
+    failed: false,
+    file: null,
+    client_key: tmp.client_key ?? String(tmp.id),
+    localUrl: tmp.localUrl,
+  };
+  return next;
+};
+
+const imageSize = async (url: string) => {
+  const img = new Image();
+  img.src = url;
+  try {
+    await img.decode();
+    return img.naturalWidth && img.naturalHeight
+      ? { width: img.naturalWidth, height: img.naturalHeight }
+      : null;
+  } catch {
+    return null;
+  }
+};
+
 const upsertById = <T extends { id: number | string }>(
   list: T[],
   row: T,
@@ -244,7 +290,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                 }
                 const row = payload.new as MessageRow;
                 if (!row?.id) return;
-                setMessages((list) => upsertById(list, row).sort(byTime));
+                setMessages((list) => settle(list, row).sort(byTime));
                 const peer =
                   row.sender_id === myId ? row.recipient_id : row.sender_id;
                 loadPeople([peer]);
@@ -454,6 +500,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         : file
           ? attachmentKind(file)
           : null;
+      const size =
+        attachmentType === "image" && localUrl
+          ? await imageSize(localUrl)
+          : null;
+      const meta = voice ?? size;
       setMessages((list) => [
         ...list,
         {
@@ -464,7 +515,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           attachment_type: attachmentType,
           attachment_name:
             attachmentType === "audio" && file ? trackTitle(file.name) : null,
-          attachment_meta: voice,
+          attachment_meta: meta,
+          client_key: tempId,
           shared_type: shared?.type ?? null,
           shared_id: shared ? String(shared.id) : null,
           localUrl,
@@ -477,10 +529,19 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
       let uploaded: Awaited<ReturnType<typeof uploadChatFile>> | null = null;
       try {
-        if (file)
+        if (file) {
           uploaded = await uploadChatFile(myId, to, file, {
             kind: voice ? "voice" : undefined,
           });
+          const path = uploaded.path;
+          if (localUrl)
+            setFileUrls((urls) => ({ ...urls, [path]: localUrl }));
+          setMessages((list) =>
+            list.map((m) =>
+              m.id === tempId ? { ...m, attachment_path: path } : m,
+            ),
+          );
+        }
         const { data, error } = await supabase
           .from("messages")
           .insert({
@@ -490,7 +551,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               attachment_path: uploaded.path,
               attachment_type: uploaded.type,
               ...(uploaded.name && { attachment_name: uploaded.name }),
-              ...(voice && { attachment_meta: voice }),
+              ...(meta && { attachment_meta: meta }),
             }),
             ...(shared && {
               shared_type: shared.type,
@@ -501,14 +562,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           .single();
         if (error) throw error;
 
-        const sent = uploaded;
-        if (sent && localUrl)
-          setFileUrls((urls) => ({ ...urls, [sent.path]: localUrl }));
         setMessages((list) =>
-          upsertById(
-            list.filter((m) => m.id !== tempId),
-            data as MessageRow,
-          ).sort(byTime),
+          settle(list, data as MessageRow, tempId).sort(byTime),
         );
       } catch (e) {
         if (uploaded) removeChatFile(uploaded.path).catch(() => {});

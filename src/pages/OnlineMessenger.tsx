@@ -78,6 +78,7 @@ export default function OnlineMessenger() {
           if (cached && cached.url === url) return cached.view;
           const message: ViewMessage<MessageRow> = {
             id: m.id,
+            key: m.client_key ?? String(m.id),
             out,
             text: m.text,
             summary: messageSummary(m),

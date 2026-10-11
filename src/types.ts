@@ -261,6 +261,8 @@ export interface VoiceMeta {
   waveform?: number[];
 }
 
+export type AttachmentMeta = VoiceMeta & { width?: number; height?: number };
+
 export interface MessageRow {
   id: number | string;
   sender_id: string;
@@ -271,7 +273,7 @@ export interface MessageRow {
   attachment_path?: string | null;
   attachment_type?: AttachmentType | null;
   attachment_name?: string | null;
-  attachment_meta?: VoiceMeta | null;
+  attachment_meta?: AttachmentMeta | null;
   shared_type?: SharedType | null;
   shared_id?: string | null;
   hidden_by_sender?: boolean;
@@ -281,6 +283,7 @@ export interface MessageRow {
   failed?: boolean;
   localUrl?: string | null;
   file?: File | null;
+  client_key?: string;
   community_id?: number;
 }
 
