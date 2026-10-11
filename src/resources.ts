@@ -7,6 +7,8 @@ import { useProfile } from "./context/ProfileContext";
 import { useSnackbar } from "./components/Snackbar";
 import { readImage } from "./utils";
 
+const UPLOAD_PARALLEL = 3;
+
 export interface Resource<T> {
   data: T | null;
   loading: boolean;
@@ -228,20 +230,25 @@ export function usePhotos(ownerId: string | null, { communityId, albumId, bookma
     [update],
   );
 
-  // Загружаем по одному, чтобы битый файл не отменял остальные. target — в какой альбом
+  // Загружаем по 3 файла одновременно — так быстрее, чем по одному, и не забиваем
+  // связь на телефоне. Каждый файл сам по себе: битый не отменяет остальные. target — в какой альбом
   const upload = async (files: File[], { albumId: target = albumId }: { albumId?: number } = {}) => {
     let added = 0;
     let lastError: unknown = null;
-    for (const file of files) {
-      try {
-        const dataUrl = await readImage(file, { max: 1600, quality: 0.85 });
-        const photo = await api.addPhoto(myId, dataUrl, { communityId, albumId: target || undefined });
-        setData((list) => [photo, ...(list ?? [])]);
-        added += 1;
-      } catch (e) {
-        lastError = e;
+    const queue = [...files];
+    const worker = async () => {
+      for (let file = queue.shift(); file; file = queue.shift()) {
+        try {
+          const dataUrl = await readImage(file, { max: 1600, quality: 0.85 });
+          const photo = await api.addPhoto(myId, dataUrl, { communityId, albumId: target || undefined });
+          setData((list) => [photo, ...(list ?? [])]);
+          added += 1;
+        } catch (e) {
+          lastError = e;
+        }
       }
-    }
+    };
+    await Promise.all(Array.from({ length: Math.min(UPLOAD_PARALLEL, files.length) }, worker));
     return { added, failed: files.length - added, error: lastError ? api.explainError(lastError) : "" };
   };
 

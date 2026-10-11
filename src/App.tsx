@@ -26,20 +26,37 @@ import { supabaseConfigured } from "./lib/supabase";
 import { useStoredState } from "./hooks";
 
 // Страницы грузятся отдельными файлами — первый экран открывается быстрее
-const Feed = lazyPage(() => import("./pages/Feed"));
-const Profile = lazyPage(() => import("./pages/Profile"));
-const OnlineMessenger = lazyPage(() => import("./pages/OnlineMessenger"));
-const Friends = lazyPage(() => import("./pages/Friends"));
-const Communities = lazyPage(() => import("./pages/Communities"));
-const Photos = lazyPage(() => import("./pages/Photos"));
-const Music = lazyPage(() => import("./pages/Music"));
-const Video = lazyPage(() => import("./pages/Video"));
-const Notifications = lazyPage(() => import("./pages/Notifications"));
-const Community = lazyPage(() => import("./pages/Community"));
-const CommunityManage = lazyPage(() => import("./pages/CommunityManage"));
-const EditProfile = lazyPage(() => import("./pages/EditProfile"));
-const Blacklist = lazyPage(() => import("./pages/Blacklist"));
-const Bookmarks = lazyPage(() => import("./pages/Bookmarks"));
+// Загрузчики страниц: браузер скачивает файл страницы один раз, повторный вызов берёт готовый
+const pages = {
+  feed: () => import("./pages/Feed"),
+  profile: () => import("./pages/Profile"),
+  messenger: () => import("./pages/OnlineMessenger"),
+  friends: () => import("./pages/Friends"),
+  communities: () => import("./pages/Communities"),
+  photos: () => import("./pages/Photos"),
+  music: () => import("./pages/Music"),
+  video: () => import("./pages/Video"),
+  notifications: () => import("./pages/Notifications"),
+  community: () => import("./pages/Community"),
+  communityManage: () => import("./pages/CommunityManage"),
+  editProfile: () => import("./pages/EditProfile"),
+  blacklist: () => import("./pages/Blacklist"),
+  bookmarks: () => import("./pages/Bookmarks"),
+};
+const Feed = lazyPage(pages.feed);
+const Profile = lazyPage(pages.profile);
+const OnlineMessenger = lazyPage(pages.messenger);
+const Friends = lazyPage(pages.friends);
+const Communities = lazyPage(pages.communities);
+const Photos = lazyPage(pages.photos);
+const Music = lazyPage(pages.music);
+const Video = lazyPage(pages.video);
+const Notifications = lazyPage(pages.notifications);
+const Community = lazyPage(pages.community);
+const CommunityManage = lazyPage(pages.communityManage);
+const EditProfile = lazyPage(pages.editProfile);
+const Blacklist = lazyPage(pages.blacklist);
+const Bookmarks = lazyPage(pages.bookmarks);
 
 
 // Тему до отрисовки уже поставил скрипт в index.html (с учётом системной)
@@ -81,6 +98,42 @@ const readRoute = () => {
   };
 };
 
+// Код открытой страницы начинаем качать сразу при запуске — параллельно с проверкой
+// входа и загрузкой профиля, а не после них. Ошибку здесь глушим: её покажет сама страница
+const PAGE_OF_VIEW: Record<string, keyof typeof pages> = {
+  feed: "feed",
+  profile: "profile",
+  user: "profile",
+  edit: "editProfile",
+  messages: "messenger",
+  friends: "friends",
+  communities: "communities",
+  club: "community",
+  photos: "photos",
+  music: "music",
+  video: "video",
+  notifications: "notifications",
+  blacklist: "blacklist",
+  bookmarks: "bookmarks",
+};
+if (supabaseConfigured) pages[PAGE_OF_VIEW[readRoute().view]]().catch(() => {});
+
+// Остальные разделы докачиваем, когда браузер освободится, — тогда переход по меню
+// открывается мгновенно, без крутилки. В режиме экономии трафика не докачиваем
+function usePrefetchPages() {
+  useEffect(() => {
+    const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
+    if (saveData) return;
+    const run = () => Object.values(pages).forEach((load) => load().catch(() => {}));
+    if ("requestIdleCallback" in window) {
+      const id = requestIdleCallback(run, { timeout: 3000 });
+      return () => cancelIdleCallback(id);
+    }
+    const t = setTimeout(run, 1500);
+    return () => clearTimeout(t);
+  }, []);
+}
+
 function PageLoading() {
   return (
     <div className="card list-state" role="status" aria-label="Загрузка">
@@ -106,6 +159,7 @@ function PageError({ onRetry }: { onRetry: () => void }) {
 
 // Приложение для вошедшего пользователя
 function Shell({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
+  usePrefetchPages();
   const { myId } = useProfile();
   const { incoming } = useFriends();
   const unreadMessages = useChatUnread();

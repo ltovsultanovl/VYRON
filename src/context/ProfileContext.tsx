@@ -21,11 +21,32 @@ export interface NewProfile {
 
 const ProfileContext = createContext<ProfileValue | null>(null);
 
-// Профиль вошедшего пользователя с сервера. Пока грузится — заставка,
-// если профиля ещё нет (первый вход) — форма «Как вас зовут?»
+// Свой профиль запоминаем в браузере: при следующем запуске страница открывается сразу,
+// без заставки, а свежая версия с сервера подтягивается в фоне
+const cacheKey = (userId: string) => `profile:${userId}`;
+const readCached = (userId: string): Profile | undefined => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(cacheKey(userId)) ?? "null");
+    return saved?.id === userId ? (saved as Profile) : undefined;
+  } catch {
+    return undefined;
+  }
+};
+const writeCached = (userId: string, profile: Profile | null | undefined) => {
+  try {
+    if (profile) localStorage.setItem(cacheKey(userId), JSON.stringify(profile));
+    else if (profile === null) localStorage.removeItem(cacheKey(userId));
+  } catch {
+    // Места нет или хранилище недоступно — просто работаем без кэша
+  }
+};
+
+// Профиль вошедшего пользователя с сервера. Пока грузится — заставка (если в браузере
+// нет сохранённой копии), если профиля ещё нет (первый вход) — форма «Как вас зовут?»
 export function ProfileProvider({ userId, children }: { userId: string; children: ReactNode }) {
   const showSnackbar = useSnackbar();
-  const [profile, setProfile] = useState<Profile | null | undefined>(undefined); // undefined — грузим, null — нет профиля
+  // undefined — грузим, null — нет профиля
+  const [profile, setProfile] = useState<Profile | null | undefined>(() => readCached(userId));
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   const profileRef = useRef(profile);
@@ -38,7 +59,10 @@ export function ProfileProvider({ userId, children }: { userId: string; children
     setError("");
     fetchProfile(userId)
       .then((p) => !cancelled && setProfile(p))
-      .catch((e) => !cancelled && setError(explainError(e)));
+      .catch((e) => {
+        // Есть сохранённая копия — показываем её, а не экран ошибки
+        if (!cancelled && !profileRef.current) setError(explainError(e));
+      });
     return () => {
       cancelled = true;
     };
@@ -69,6 +93,8 @@ export function ProfileProvider({ userId, children }: { userId: string; children
     async (data: NewProfile) => setProfile(await createProfile(userId, data)),
     [userId],
   );
+
+  useEffect(() => writeCached(userId, profile), [userId, profile]);
 
   const value = useMemo(
     () => (profile ? { profile, name: fullName(profile), myId: userId, updateProfile } : null),

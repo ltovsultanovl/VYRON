@@ -10,6 +10,17 @@ interface AuthValue {
 
 const AuthContext = createContext<AuthValue | null>(null);
 
+// После выхода сохранённая копия профиля (см. ProfileContext) на устройстве не нужна
+function forgetCachedProfiles() {
+  try {
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith("profile:"))
+      .forEach((key) => localStorage.removeItem(key));
+  } catch {
+    // Хранилище недоступно — и кэша там нет
+  }
+}
+
 // Сессия Supabase: undefined — ещё проверяем, null — не вошёл, объект — вошёл.
 // recovering — пользователь пришёл по ссылке «Восстановить пароль» и должен задать новый
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -22,7 +33,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = supabase.auth.onAuthStateChange((event, next) => {
       setSession(next);
       if (event === "PASSWORD_RECOVERY") setRecovering(true);
-      if (event === "SIGNED_OUT") setRecovering(false);
+      if (event === "SIGNED_OUT") {
+        setRecovering(false);
+        forgetCachedProfiles();
+      }
     });
     return () => data.subscription.unsubscribe();
   }, []);
