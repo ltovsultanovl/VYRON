@@ -159,11 +159,17 @@ textarea {
   user-select: none;
 }
 .avatar--empty {
-  overflow: hidden;
   background: var(--avatar-empty-bg);
   color: var(--avatar-empty-fg);
 }
+.avatar__clip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 50%;
+}
 .avatar__silhouette {
+  display: block;
   width: 100%;
   height: 100%;
   fill: currentColor;
