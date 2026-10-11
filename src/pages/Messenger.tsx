@@ -342,7 +342,7 @@ function VoicePlayer({
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
   const [rate, setRate] = useState(voiceRate);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<false | "load" | "format">(false);
   const playedRef = useRef<HTMLDivElement>(null);
   const duration = meta?.duration || 0;
   // Волна мягче: каждый столбик сглаживаем с соседями, чтобы не было резких зубцов
@@ -377,7 +377,7 @@ function VoicePlayer({
     if (!audio) return;
     if (audio.paused) {
       audio.playbackRate = voiceRate;
-      audio.play().catch(() => setFailed(true));
+      audio.play().catch((e: DOMException) => setFailed(e.name === "NotSupportedError" ? "format" : "load"));
     } else audio.pause();
   };
 
@@ -417,7 +417,7 @@ function VoicePlayer({
         type="button"
         className="voice__play"
         onClick={toggle}
-        disabled={!url || pending || failed}
+        disabled={!url || pending || !!failed}
         aria-label={playing ? "Пауза" : "Слушать"}
       >
         {pending ? <div className="chat-status__spinner" /> : playing ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
@@ -444,7 +444,11 @@ function VoicePlayer({
         </div>
         <span className="voice__meta">
           <span className="voice__time">
-            {failed ? "Не удалось загрузить" : formatDuration(playing || time ? time : Math.max(duration, duration > 0 ? 1 : 0))}
+            {failed === "format"
+              ? "Старый формат — не играет на этом устройстве"
+              : failed
+                ? "Не удалось загрузить"
+                : formatDuration(playing || time ? time : Math.max(duration, duration > 0 ? 1 : 0))}
           </span>
           {unlistened && <span className="voice__dot" title={out ? "Ещё не прослушано" : "Не прослушано"} />}
           {(playing || time > 0) && (
@@ -476,7 +480,8 @@ function VoicePlayer({
             if (!out) playNext();
           }}
           onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
-          onError={() => setFailed(true)}
+          // Код 4 — браузер не умеет этот формат (старые голосовые WebM на iPhone)
+          onError={(e) => setFailed(e.currentTarget.error?.code === 4 ? "format" : "load")}
         />
       )}
     </div>

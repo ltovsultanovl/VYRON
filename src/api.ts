@@ -963,7 +963,14 @@ export const uploadChatFile = async (
   let name: string | null = null;
   const kind = forcedKind ?? attachmentKind(file);
   if (kind === "voice") {
-    ext = { "audio/mp4": "m4a", "audio/ogg": "ogg" }[file.type] ?? "webm";
+    // В MP3 — чтобы голосовое слышали все, в том числе на iPhone. Не вышло — отправляем как записали
+    try {
+      const { voiceToMp3 } = await import("./voiceMp3");
+      blob = await voiceToMp3(file);
+    } catch {
+      blob = file;
+    }
+    ext = blob.type === "audio/mpeg" ? "mp3" : ({ "audio/mp4": "m4a", "audio/ogg": "ogg" }[file.type] ?? "webm");
     type = "voice";
   } else if (kind === "audio") {
     if (file.size > MAX_FILE_MB * 1024 * 1024) throw new Error(`Файл больше ${MAX_FILE_MB} МБ`);
