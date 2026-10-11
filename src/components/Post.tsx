@@ -6,6 +6,8 @@ import ConfirmModal from "./ConfirmModal";
 import EmojiPicker from "./EmojiPicker";
 import ShareModal from "./ShareModal";
 import {
+  BookmarkFilledIcon,
+  BookmarkIcon,
   CommentIcon,
   LikeIcon,
   MoreIcon,
@@ -17,6 +19,7 @@ import {
 import { useProfile } from "../context/ProfileContext";
 import { useCommunities } from "../context/CommunitiesContext";
 import { useDropdown } from "../hooks";
+import { useBookmarks } from "../context/BookmarksContext";
 import { formatCount, formatDate, plural } from "../utils";
 
 const TEXT_LIMIT = 300;
@@ -28,7 +31,7 @@ const PersonLink = ({ person, className }: { person: Person; className?: string 
   </a>
 );
 
-// ---------- Меню «⋯»: закрепить (владелец стены), удалить (автор или владелец) ----------
+// ---------- Меню «⋯»: в закладки, закрепить (владелец стены), удалить (автор или владелец) ----------
 function PostMenu({
   post,
   canPin,
@@ -44,6 +47,8 @@ function PostMenu({
 }) {
   const menu = useDropdown();
   const [confirming, setConfirming] = useState(false);
+  const { isSaved, toggle } = useBookmarks();
+  const saved = isSaved("post", post.id);
 
   return (
     <div className="post__menu" ref={menu.ref}>
@@ -53,6 +58,18 @@ function PostMenu({
 
       {menu.open && (
         <div className="dropdown dropdown--right">
+          {!post.suggested && (
+            <button
+              className="dropdown__item"
+              onClick={() => {
+                menu.close();
+                toggle("post", post.id);
+              }}
+            >
+              {saved ? <BookmarkFilledIcon /> : <BookmarkIcon />}
+              {saved ? "Удалить из закладок" : "Сохранить в закладках"}
+            </button>
+          )}
           {canPin && (
             <button
               className="dropdown__item"
@@ -242,7 +259,7 @@ export default memo(function Post({
             {formatDate(post.createdAt)}
           </div>
         </div>
-        {(canDelete || canPin) && (
+        {(canDelete || canPin || !post.suggested) && (
           <PostMenu
             post={post}
             canPin={canPin}

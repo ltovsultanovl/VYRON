@@ -2004,3 +2004,43 @@ $$;
 
 revoke execute on function public.blocked_me_ids() from public, anon;
 grant execute on function public.blocked_me_ids() to authenticated;
+
+-- =========================================================
+-- Закладки, как в VK: записи, фото, видео, люди и сообщества.
+-- Видны и меняются только владельцем. Удалили запись, фото, видео,
+-- страницу или сообщество — закладка исчезает сама (on delete cascade)
+-- =========================================================
+create table if not exists public.bookmarks (
+  id bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references public.profiles (id) on delete cascade,
+  post_id bigint references public.posts (id) on delete cascade,
+  photo_id bigint references public.photos (id) on delete cascade,
+  video_id bigint references public.videos (id) on delete cascade,
+  person_id uuid references public.profiles (id) on delete cascade,
+  community_id bigint references public.communities (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  -- ровно одна цель у закладки
+  check (num_nonnulls(post_id, photo_id, video_id, person_id, community_id) = 1),
+  check (person_id is null or person_id <> user_id)
+);
+
+create unique index if not exists bookmarks_post_uniq on public.bookmarks (user_id, post_id) where post_id is not null;
+create unique index if not exists bookmarks_photo_uniq on public.bookmarks (user_id, photo_id) where photo_id is not null;
+create unique index if not exists bookmarks_video_uniq on public.bookmarks (user_id, video_id) where video_id is not null;
+create unique index if not exists bookmarks_person_uniq on public.bookmarks (user_id, person_id) where person_id is not null;
+create unique index if not exists bookmarks_community_uniq on public.bookmarks (user_id, community_id) where community_id is not null;
+create index if not exists bookmarks_user_idx on public.bookmarks (user_id, created_at desc);
+
+alter table public.bookmarks enable row level security;
+
+drop policy if exists "Свои закладки" on public.bookmarks;
+create policy "Свои закладки" on public.bookmarks
+  for all to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+revoke update on public.bookmarks from authenticated;
+
+drop trigger if exists bookmarks_rate_limit on public.bookmarks;
+create trigger bookmarks_rate_limit before insert on public.bookmarks
+  for each row execute function public.rate_limit('user_id', '200', '1 hour');

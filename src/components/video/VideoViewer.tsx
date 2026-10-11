@@ -16,7 +16,10 @@ import {
   PlusIcon,
   SendIcon,
   ShareIcon,
+  BookmarkFilledIcon,
+  BookmarkIcon,
 } from "../Icons";
+import { useBookmarks } from "../../context/BookmarksContext";
 import { useProfile } from "../../context/ProfileContext";
 import { usePlayer } from "../../context/PlayerContext";
 import { useVideos } from "../../context/VideoContext";
@@ -46,6 +49,7 @@ export default function VideoViewer({
   const showSnackbar = useSnackbar();
   const player = usePlayer();
   const library = useVideos();
+  const { isSaved, toggle: toggleBookmark } = useBookmarks();
   const fresh = useResource(() => api.fetchVideo(id, myId), [id, myId]);
   const [video, setVideo] = useState<Video | null>(initial ?? null);
   const comments = useResource(() => api.fetchVideoComments(id), [id]);
@@ -207,6 +211,13 @@ export default function VideoViewer({
                     title="Поделиться"
                   >
                     <ShareIcon />
+                  </button>
+                  <button
+                    className={`pill ${isSaved("video", video.id) ? "pill--saved" : ""}`}
+                    onClick={() => toggleBookmark("video", video.id)}
+                    title={isSaved("video", video.id) ? "Удалить из закладок" : "В закладки"}
+                  >
+                    {isSaved("video", video.id) ? <BookmarkFilledIcon /> : <BookmarkIcon />}
                   </button>
                   <button
                     className={`btn btn--neutral video-viewer__add ${added ? "video-viewer__add--on" : ""}`}

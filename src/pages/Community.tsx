@@ -25,6 +25,7 @@ import { useProfile } from "../context/ProfileContext";
 import { useCommunities } from "../context/CommunitiesContext";
 import { useChatActions } from "../context/ChatContext";
 import { useDropdown, useFilePicker } from "../hooks";
+import { useBookmarks } from "../context/BookmarksContext";
 import { usePhotos, usePosts, useResource } from "../resources";
 import { bg } from "../data";
 import { fetchCommunity, fetchCommunityMembers } from "../api";
@@ -471,6 +472,7 @@ export default function Community({ id, onNavigate }: { id: number; onNavigate: 
   const { openCommunityChat } = useChatActions();
   const showSnackbar = useSnackbar();
   const menu = useDropdown();
+  const { isSaved, toggle: toggleBookmark } = useBookmarks();
   const [modal, setModal] = useState<"share" | "invite" | null>(null);
   const status = statusIn(id);
   // Перечитываем сообщество, когда меняется моё участие (вступил, вышел, приняли заявку)
@@ -624,6 +626,15 @@ export default function Community({ id, onNavigate }: { id: number; onNavigate: 
                     }}
                   >
                     Скопировать ссылку
+                  </button>
+                  <button
+                    className="dropdown__item"
+                    onClick={() => {
+                      menu.close();
+                      toggleBookmark("community", community.id);
+                    }}
+                  >
+                    {isSaved("community", community.id) ? "Удалить из закладок" : "Добавить в закладки"}
                   </button>
                 </div>
               )}

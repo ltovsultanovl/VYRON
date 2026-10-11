@@ -574,3 +574,9 @@ export const BlockIcon = (p: IconProps) => (
     <path d="m6 6 12 12" />
   </Svg>
 );
+
+export const BookmarkFilledIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M6 5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v15l-6-4-6 4V5Z" fill="currentColor" />
+  </Svg>
+);

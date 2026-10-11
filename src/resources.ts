@@ -66,6 +66,7 @@ export type PostSource =
   | { wall: string }
   | { community: number; suggested?: boolean }
   | { liked: true }
+  | { bookmarked: true }
   | { feed: string[] | null; communities?: number[] };
 
 export interface PublishData {
@@ -88,6 +89,7 @@ export function usePosts(source: PostSource) {
     if ("wall" in source) return api.fetchWall(source.wall, myId);
     if ("community" in source) return api.fetchCommunityWall(source.community, myId, { suggested: !!source.suggested });
     if ("liked" in source) return api.fetchLikedPosts(myId);
+    if ("bookmarked" in source) return api.fetchBookmarkedPosts(myId);
     return api.fetchFeed(source.feed, myId, source.communities ?? []);
   }, [key, myId]);
   const { setData, update, reload } = resource;
@@ -212,12 +214,12 @@ export function usePosts(source: PostSource) {
 
 // Фото человека или сообщества: usePhotos(userId) / usePhotos(null, { communityId }).
 // albumId — только один альбом (0 — «Фотографии с моей страницы»)
-export function usePhotos(ownerId: string | null, { communityId, albumId }: api.PhotoSource = {}) {
+export function usePhotos(ownerId: string | null, { communityId, albumId, bookmarked }: api.PhotoSource = {}) {
   const { myId, profile, updateProfile } = useProfile();
   const showSnackbar = useSnackbar();
   const resource = useResource<Photo[]>(
-    () => api.fetchPhotos(ownerId, myId, { communityId, albumId }),
-    [ownerId, communityId, albumId, myId],
+    () => api.fetchPhotos(ownerId, myId, { communityId, albumId, bookmarked }),
+    [ownerId, communityId, albumId, bookmarked, myId],
   );
   const { setData, update, reload } = resource;
 

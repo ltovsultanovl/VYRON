@@ -818,9 +818,11 @@ const toPhoto = (row: PhotoRow, myId: string): Photo => ({
 export interface PhotoSource {
   communityId?: number;
   albumId?: number; // 0 — «Фотографии с моей страницы»
+  bookmarked?: boolean; // сохранённые в закладках
 }
 
-export const fetchPhotos = async (ownerId: string | null, myId: string, { communityId, albumId }: PhotoSource = {}) => {
+export const fetchPhotos = async (ownerId: string | null, myId: string, { communityId, albumId, bookmarked }: PhotoSource = {}) => {
+  if (bookmarked) return fetchBookmarkedPhotos(myId);
   let request = supabase.from("photos").select(PHOTO_FIELDS).order("created_at", { ascending: false });
   request = communityId ? request.eq("community_id", communityId) : request.eq("owner_id", ownerId!).is("community_id", null);
   if (albumId === 0) request = request.is("album_id", null);
@@ -1439,3 +1441,96 @@ export const fetchBlockedMe = async () => unwrap<string[]>(await supabase.rpc("b
 
 export const blockUser = (userId: string) => rpc("block_user", { u: userId });
 export const unblockUser = (userId: string) => rpc("unblock_user", { u: userId });
+
+// ---------- Закладки ----------
+
+export type BookmarkKind = "post" | "photo" | "video" | "person" | "community";
+
+const BOOKMARK_COLUMN: Record<BookmarkKind, string> = {
+  post: "post_id",
+  photo: "photo_id",
+  video: "video_id",
+  person: "person_id",
+  community: "community_id",
+};
+
+// Ключ закладки: "post:12", "person:<uuid>"
+export const bookmarkKey = (kind: BookmarkKind, id: string | number) => `${kind}:${id}`;
+
+type BookmarkRow = Record<"post_id" | "photo_id" | "video_id" | "person_id" | "community_id", string | number | null>;
+
+// Все мои закладки — только ключи, чтобы в меню сразу видеть «Сохранено / Сохранить»
+export const fetchBookmarkKeys = async () =>
+  unwrap<BookmarkRow[]>(
+    await supabase.from("bookmarks").select("post_id, photo_id, video_id, person_id, community_id").limit(5000),
+  ).map((row) => {
+    const kind = (Object.keys(BOOKMARK_COLUMN) as BookmarkKind[]).find((k) => row[BOOKMARK_COLUMN[k] as keyof BookmarkRow] != null)!;
+    return bookmarkKey(kind, row[BOOKMARK_COLUMN[kind] as keyof BookmarkRow]!);
+  });
+
+export const setBookmarked = async (kind: BookmarkKind, id: string | number, on: boolean) => {
+  const column = BOOKMARK_COLUMN[kind];
+  const value = kind === "person" ? String(id) : Number(id);
+  return on
+    ? unwrap(await supabase.from("bookmarks").insert({ [column]: value } as never))
+    : unwrap(await supabase.from("bookmarks").delete().eq(column, value));
+};
+
+// id сохранённого по порядку «новые сверху»
+const bookmarkedIds = async <T extends string | number>(kind: BookmarkKind): Promise<T[]> => {
+  const column = BOOKMARK_COLUMN[kind];
+  return unwrap<Record<string, T>[]>(
+    await supabase.from("bookmarks").select(column).not(column, "is", null).order("created_at", { ascending: false }).limit(200),
+  ).map((r) => r[column]);
+};
+
+// Удалённое или скрытое от меня (RLS) просто не придёт — в списке его не будет
+const inOrder = <T extends { id: string | number }>(items: T[], order: (string | number)[]) =>
+  items.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+
+export const fetchBookmarkedPosts = async (myId: string) => {
+  const ids = await bookmarkedIds<number>("post");
+  if (!ids.length) return [];
+  const rows = unwrap<PostRow[]>(await supabase.from("posts").select(POST_FIELDS).in("id", ids));
+  return inOrder(rows.map((row) => toPost(row, myId)), ids);
+};
+
+export const fetchBookmarkedPhotos = async (myId: string) => {
+  const ids = await bookmarkedIds<number>("photo");
+  if (!ids.length) return [];
+  return inOrder(
+    unwrap<PhotoRow[]>(await supabase.from("photos").select(PHOTO_FIELDS).in("id", ids)).map((row) => toPhoto(row, myId)),
+    ids,
+  );
+};
+
+// Люди по списку id (например, владельцы сохранённых фото)
+export const fetchPeopleByIds = async (ids: string[]) =>
+  ids.length
+    ? unwrap<PersonRow[]>(await supabase.from("profiles").select(PERSON_FIELDS).in("id", ids))
+        .map(toPerson)
+        .filter((p): p is Person => !!p)
+    : [];
+
+export const fetchBookmarkedVideos = async (myId: string) => {
+  const ids = await bookmarkedIds<number>("video");
+  if (!ids.length) return [];
+  return inOrder(
+    unwrap<VideoRow[]>(await supabase.from("videos").select(VIDEO_FIELDS).in("id", ids)).map((row) => toVideo(row, myId)),
+    ids,
+  );
+};
+
+export const fetchBookmarkedPeople = async () => {
+  const ids = await bookmarkedIds<string>("person");
+  return inOrder(await fetchPeopleByIds(ids), ids);
+};
+
+export const fetchBookmarkedCommunities = async () => {
+  const ids = await bookmarkedIds<number>("community");
+  if (!ids.length) return [];
+  return inOrder(
+    unwrap<CommunityRow[]>(await supabase.from("communities").select(COMMUNITY_FIELDS).in("id", ids)).map(toCommunity),
+    ids,
+  );
+};

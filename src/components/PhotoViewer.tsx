@@ -14,6 +14,8 @@ import {
   CommentIcon,
   DownloadIcon,
   ImageCoverIcon,
+  BookmarkFilledIcon,
+  BookmarkIcon,
   LikeIcon,
   MoveIcon,
   SendIcon,
@@ -21,6 +23,7 @@ import {
   UserIcon,
 } from "./Icons";
 import { useSnackbar } from "./Snackbar";
+import { useBookmarks } from "../context/BookmarksContext";
 import { useProfile } from "../context/ProfileContext";
 import { useDropdown, useScrollLock } from "../hooks";
 import { formatCount, formatDate } from "../utils";
@@ -157,6 +160,7 @@ export default function PhotoViewer({
   const [comment, setComment] = useState("");
   const [sending, setSending] = useState(false);
   const isMine = canManage ?? owner.id === myId;
+  const { isSaved, toggle: toggleBookmark } = useBookmarks();
   const href = ownerHref ?? `#user/${owner.id}`;
   const commentsRef = useRef<HTMLDivElement>(null);
   const commentInputRef = useRef<HTMLInputElement>(null);
@@ -321,6 +325,13 @@ export default function PhotoViewer({
               </button>
               <button className="viewer__action" onClick={share} title="Поделиться">
                 <ShareIcon size={28} />
+              </button>
+              <button
+                className={`viewer__action ${isSaved("photo", photo.id) ? "viewer__action--saved" : ""}`}
+                onClick={() => toggleBookmark("photo", photo.id)}
+                title={isSaved("photo", photo.id) ? "Удалить из закладок" : "В закладки"}
+              >
+                {isSaved("photo", photo.id) ? <BookmarkFilledIcon size={28} /> : <BookmarkIcon size={28} />}
               </button>
             </div>
 

@@ -2,7 +2,6 @@ import {
   BookmarkIcon,
   FriendsIcon,
   GroupsIcon,
-  HelpIcon,
   MessageIcon,
   MusicIcon,
   NewsIcon,
@@ -31,12 +30,9 @@ export const NAV_GROUPS: MenuItem[][] = [
     { view: "video", Icon: VideoIcon, label: "Видео" },
   ],
   [
-    { Icon: BookmarkIcon, label: "Закладки" },
-    { Icon: HelpIcon, label: "Помощь" },
+    { view: "bookmarks", Icon: BookmarkIcon, label: "Закладки" },
   ],
 ];
-
-const FOOTER_LINKS = ["Блог", "Разработчикам", "Для бизнеса", "Ещё"];
 
 // counters — числа у пунктов по их view: { messages: 3, friends: 1 }
 // Подразделы подсвечивают свой раздел: редактирование — профиль, сообщество — «Сообщества»
@@ -84,13 +80,6 @@ export default function Sidebar({
           {items.map(renderItem)}
         </div>
       ))}
-      <div className="sidebar__footer">
-        {FOOTER_LINKS.map((label) => (
-          <a key={label} href="#" onClick={(e) => e.preventDefault()}>
-            {label}
-          </a>
-        ))}
-      </div>
     </nav>
   );
 }

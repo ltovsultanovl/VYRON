@@ -523,17 +523,6 @@ textarea {
 .sidebar .separator {
   margin: 8px 6px;
 }
-.sidebar__footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 8px;
-  padding: 8px 6px;
-  color: var(--text-secondary);
-  font-size: 12px;
-}
-.sidebar__footer a:hover {
-  text-decoration: underline;
-}
 
 /* =========================================================
    Карточки
@@ -5319,8 +5308,7 @@ button.shared--state {
     height: 40px;
     padding: 0;
   }
-  .nav-item__label,
-  .sidebar__footer {
+  .nav-item__label {
     display: none;
   }
   .nav-item .counter {
@@ -5968,4 +5956,67 @@ textarea {
 [data-theme="dark"] .share__person--on .share__check,
 [data-theme="dark"] .checkbox input:checked + .checkbox__box {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230a0a0a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12 4 4 8-8'/%3E%3C/svg%3E");
+}
+
+/* =========================================================
+   Закладки
+   ========================================================= */
+.bookmarks__head {
+  padding: 0;
+}
+.bookmarks__head .wall-tabs {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.bookmarks__head .seg {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.bookmarks {
+  padding: 8px 16px;
+}
+.bookmarks__grid {
+  padding: 8px 0;
+}
+.bookmarks__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+.bookmarks__row + .bookmarks__row {
+  border-top: 1px solid var(--separator);
+}
+.bookmarks__info {
+  flex: 1;
+  min-width: 0;
+}
+.bookmarks__name {
+  display: block;
+  overflow: hidden;
+  font-weight: 500;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bookmarks__info .muted {
+  font-size: 13px;
+}
+.bookmarks__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 16px;
+  color: var(--icon-secondary);
+  text-align: center;
+}
+.bookmarks__empty > div:first-of-type {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+}
+.viewer__action--saved,
+.pill--saved {
+  color: var(--accent);
 }

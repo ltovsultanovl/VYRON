@@ -9,6 +9,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import FriendButton from "../components/FriendButton";
 import BlockModal from "../components/BlockModal";
 import { useBlocks } from "../context/BlocksContext";
+import { useBookmarks } from "../context/BookmarksContext";
 import ShareModal from "../components/ShareModal";
 import AlbumsTab from "../components/media/AlbumsTab";
 import MusicTab from "../components/media/MusicTab";
@@ -18,6 +19,8 @@ import { useSnackbar } from "../components/Snackbar";
 import {
   AlbumsIcon,
   BlockIcon,
+  BookmarkFilledIcon,
+  BookmarkIcon,
   ArticlesIcon,
   CameraIcon,
   CloseIcon,
@@ -754,8 +757,10 @@ function SubscriptionsCard({ userId, isMe }: { userId: string; isMe: boolean }) 
 function ProfileMoreMenu({ person }: { person: Person }) {
   const menu = useDropdown();
   const { isBlocked, block, unblock } = useBlocks();
+  const { isSaved, toggle } = useBookmarks();
   const [confirm, setConfirm] = useState(false);
   const blocked = isBlocked(person.id);
+  const saved = isSaved("person", person.id);
   return (
     <div className="profile-more" ref={menu.ref}>
       <button className="btn btn--neutral btn--icon" title="Ещё" onClick={menu.toggle}>
@@ -763,6 +768,15 @@ function ProfileMoreMenu({ person }: { person: Person }) {
       </button>
       {menu.open && (
         <div className="dropdown dropdown--right profile-more__dropdown">
+          <button
+            className="dropdown__item"
+            onClick={() => {
+              menu.close();
+              toggle("person", person.id);
+            }}
+          >
+            {saved ? <BookmarkFilledIcon /> : <BookmarkIcon />} {saved ? "Удалить из закладок" : "Добавить в закладки"}
+          </button>
           <button
             className={`dropdown__item ${blocked ? "" : "dropdown__item--danger"}`}
             onClick={() => {
