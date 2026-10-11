@@ -564,13 +564,15 @@ export default function Community({ id, onNavigate }: { id: number; onNavigate: 
             <CommunityJoinButton community={community} />
             {community.messagesEnabled && !canPublish && (
               <button
-                className="btn btn--neutral"
+                className="btn btn--neutral btn--icon"
+                title="Написать сообщение"
+                aria-label="Написать сообщение"
                 onClick={() => {
                   openCommunityChat(community);
                   onNavigate("messages");
                 }}
               >
-                <MessageIcon size={18} /> Написать сообщение
+                <MessageIcon size={18} />
               </button>
             )}
             {canPublish && (

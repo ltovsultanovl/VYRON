@@ -6038,3 +6038,156 @@ textarea {
     margin: 2px 0 0;
   }
 }
+
+/* =========================================================
+   Телефон — как в приложении VK (VKUI).
+   Цвета наши; меняется только раскладка: блоки во всю ширину экрана
+   со скруглёнными углами и узкими промежутками, компактные аватары и кнопки
+   ========================================================= */
+@media (max-width: 760px) {
+  /* Блоки от края до края, между ними 8 px фона */
+  .layout {
+    gap: 0;
+    padding-top: 8px;
+    padding-right: var(--safe-right);
+    padding-left: var(--safe-left);
+  }
+  .columns,
+  .columns__side {
+    gap: 0;
+  }
+  .card {
+    margin-bottom: 8px;
+    border-radius: 14px;
+    box-shadow: none;
+  }
+  .columns__side .card,
+  .columns__side .side-menu {
+    margin-bottom: 8px;
+  }
+  .messenger {
+    margin-bottom: 0;
+  }
+
+  /* Вкладки листаются пальцем, кнопка «Создать / Загрузить» — значком справа */
+  .wall-head {
+    gap: 4px;
+    min-height: 48px;
+  }
+  .wall-tabs {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 6px 8px;
+  }
+  .wall-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .wall-tabs .seg {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .communities-head__create {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    margin-right: 4px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 0; /* текст остаётся для экранных чтецов */
+  }
+
+  /* Профиль: обложка ниже, аватар 104 px, имя крупнее подписи */
+  .profile-cover {
+    height: 150px;
+  }
+  .profile-info {
+    gap: 10px;
+    padding: 12px 16px 16px;
+  }
+  .profile-info__avatar {
+    margin-top: -64px;
+    padding: 3px;
+  }
+  .profile-info__avatar .avatar {
+    width: 104px !important;
+    height: 104px !important;
+    font-size: 38px !important;
+  }
+  .profile-info__name {
+    font-size: 20px;
+    line-height: 25px;
+  }
+  .profile-info__details {
+    margin-top: 4px;
+    font-size: 13px;
+  }
+
+  /* Списки людей и сообществ: аватар 56 px, кнопки небольшие и в ряд */
+  .friend {
+    gap: 12px;
+    padding: 10px 16px;
+  }
+  .friend .avatar {
+    width: 56px !important;
+    height: 56px !important;
+    font-size: 21px !important;
+  }
+  .friend__name {
+    font-size: 15px;
+  }
+  .friend__city {
+    font-size: 13px;
+  }
+  .friend-actions {
+    flex-wrap: nowrap;
+  }
+  .friend .btn,
+  .notif__actions .btn {
+    height: 32px;
+    padding: 0 14px;
+    font-size: 13px;
+  }
+
+  /* Записи: шапка и действия плотнее */
+  .post__head {
+    padding: 12px 12px 0 16px;
+  }
+  .post__text {
+    padding-right: 16px;
+    padding-left: 16px;
+    font-size: 15px;
+    line-height: 1.4;
+  }
+  .post__actions {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  /* Шапка разделов («Мои фотографии», «Друзья» и т. п.) */
+  .card__header {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+}
+
+/* Узкие телефоны: кнопки под именем, на всю ширину строки */
+@media (max-width: 480px) {
+  .friend__button,
+  .friend > .friend-actions,
+  .friend > .friend-menu {
+    margin-left: 68px;
+  }
+  .friend-actions {
+    flex-wrap: wrap;
+  }
+}
+
+/* Кнопка-значок всегда квадратная — общие отступы кнопок узких экранов её не сжимают */
+@media (max-width: 760px) {
+  .btn.btn--icon {
+    padding: 0;
+  }
+}

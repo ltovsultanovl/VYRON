@@ -64,7 +64,7 @@ function InlineActions({ group }: { group: NotificationGroup }) {
     return (
       <div className="notif__actions">
         <button className="btn" disabled={busy} onClick={run(() => join(community))}>
-          Принять приглашение
+          Принять
         </button>
         <button className="btn btn--neutral" disabled={busy} onClick={run(() => leave(community))}>
           Отклонить
