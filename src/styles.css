@@ -2063,7 +2063,7 @@ textarea {
   font-size: 12.5px;
 }
 
-/* Формы создания альбома и статьи */
+/* Формы создания альбома, видео, плейлиста, сообщества */
 .media-form {
   display: flex;
   flex-direction: column;
@@ -2075,16 +2075,6 @@ textarea {
   gap: 6px;
   color: var(--text-subhead);
   font-size: 13px;
-}
-.media-form__title {
-  height: 44px;
-  font-size: 17px;
-  font-weight: 500;
-}
-.media-form__text {
-  min-height: 220px;
-  resize: vertical;
-  line-height: 20px;
 }
 
 /* Альбомы */
@@ -2231,66 +2221,6 @@ textarea {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-/* Статьи */
-.articles {
-  padding: 0 8px;
-}
-.article-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 10px 8px;
-  border: 0;
-  border-radius: 8px;
-  background: none;
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.article-row:hover {
-  background: var(--hover);
-}
-.article-row__icon {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  background: var(--field-bg);
-  color: var(--icon-secondary);
-}
-.article-row__body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.article-row__title {
-  font-size: 14px;
-  font-weight: 500;
-}
-.article-row__meta {
-  color: var(--text-secondary);
-  font-size: 13px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.article__date {
-  margin-bottom: 12px;
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-.article__text {
-  font-size: 15px;
-  line-height: 23px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }
 
 @media (max-width: 760px) {
@@ -6822,4 +6752,118 @@ body {
 .mention-list__item.active,
 .mention-list__item:hover {
   background: var(--hover);
+}
+
+/* =========================================================
+   Профиль: «Друзья» и «Подписки». На компьютере — правая колонка,
+   на телефоне — ленты сразу под шапкой, как в мобильном VK
+   ========================================================= */
+.card__header-chevron {
+  display: none;
+}
+.columns--profile .friends-mini--wide a:nth-child(n + 9),
+.columns--profile .subs-item:nth-child(n + 6) {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  /* Обёртка левой колонки растворяется, а правая колонка встаёт перед фото и стеной */
+  .columns--profile {
+    gap: 0;
+  }
+  .columns--profile > .profile-main {
+    display: contents;
+  }
+  /* «Друзья» и «Подписки» — две плитки рядом, 50 на 50.
+     Если подписок нет, «Друзья» растягиваются на всю ширину */
+  .columns--profile > .columns__side {
+    order: -1;
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .columns--profile > .columns__side > .card {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-bottom: 0;
+    padding-bottom: 12px;
+  }
+
+  /* Заголовок «Друзья 152 ›»: счётчик серым, стрелка прижата вправо */
+  .columns--profile > .columns__side .card__header {
+    min-height: 42px;
+    padding: 0 12px;
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .columns--profile > .columns__side .card__header .muted {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .columns--profile > .columns__side .card__header-chevron {
+    display: block;
+    flex: none;
+    margin-left: auto;
+    margin-right: -6px;
+    color: var(--text-secondary);
+  }
+  /* На чужой странице заголовок никуда не ведёт — стрелку не показываем */
+  .columns--profile > .columns__side a.card__header--link:not([href]) .card__header-chevron {
+    display: none;
+  }
+  .columns--profile > .columns__side a.card__header--link[href]:hover {
+    text-decoration: none;
+  }
+
+  /* Аватарки внахлёст, без подписей */
+  .columns--profile .friends-mini--wide,
+  .columns--profile .subs-list {
+    display: flex;
+    gap: 0;
+    padding: 0 12px;
+    overflow: hidden;
+  }
+  .columns--profile .friends-mini--wide a,
+  .columns--profile .subs-item,
+  .columns--profile .friends-mini--wide a:nth-child(n + 9),
+  .columns--profile .subs-item:nth-child(n + 6) {
+    display: block;
+    flex: none;
+    padding: 0;
+    border-radius: 50%;
+    line-height: 0;
+  }
+  /* 4 аватарки помещаются в плитку даже на узком телефоне (320px) */
+  .columns--profile .friends-mini--wide a:nth-child(n + 5),
+  .columns--profile .subs-item:nth-child(n + 5) {
+    display: none;
+  }
+  .columns--profile .friends-mini--wide a + a,
+  .columns--profile .subs-item + .subs-item {
+    margin-left: -12px;
+  }
+  .columns--profile .friends-mini--wide .avatar,
+  .columns--profile .subs-item .avatar {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 15px !important;
+    box-shadow: 0 0 0 2px var(--card);
+  }
+  .columns--profile .friends-mini--wide a > span:last-child,
+  .columns--profile .subs-item > div {
+    display: none;
+  }
+  .columns--profile .subs-item:hover {
+    background: none;
+  }
+  .columns--profile .friends-empty {
+    padding: 0 12px;
+    font-size: 13px;
+  }
+}
+@media (max-width: 760px) {
+  .columns--profile > .columns__side {
+    margin-bottom: 8px;
+  }
 }

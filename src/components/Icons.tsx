@@ -369,12 +369,6 @@ export const AlbumsIcon = (p: IconProps) => (
   </Svg>
 );
 
-export const ArticlesIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M4 6h16M4 10h10M4 14h16M4 18h10" />
-  </Svg>
-);
-
 export const SparkleIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M10 3.5 11.6 8a3 3 0 0 0 1.9 1.9L18 11.5l-4.5 1.6a3 3 0 0 0-1.9 1.9L10 19.5 8.4 15a3 3 0 0 0-1.9-1.9L2 11.5l4.5-1.6A3 3 0 0 0 8.4 8L10 3.5Z" />

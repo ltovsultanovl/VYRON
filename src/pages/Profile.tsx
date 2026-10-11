@@ -14,14 +14,12 @@ import ShareModal from "../components/ShareModal";
 import AlbumsTab from "../components/media/AlbumsTab";
 import MusicTab from "../components/media/MusicTab";
 import VideoTab from "../components/media/VideoTab";
-import ArticlesTab from "../components/media/ArticlesTab";
 import { useSnackbar } from "../components/Snackbar";
 import {
   AlbumsIcon,
   BlockIcon,
   BookmarkFilledIcon,
   BookmarkIcon,
-  ArticlesIcon,
   CameraIcon,
   CloseIcon,
   EducationIcon,
@@ -34,6 +32,7 @@ import {
   PhotoIcon,
   PlusIcon,
   SearchIcon,
+  ChevronRightIcon,
   TrashIcon,
   VideoIcon,
   type Icon,
@@ -350,14 +349,13 @@ function Status({ profile, editable }: { profile: ProfileType; editable: boolean
 }
 
 // ---------- Медиа: фото (с сервера) и личные вкладки (только на своей странице) ----------
-type MediaTab = "photos" | "albums" | "music" | "video" | "articles";
+type MediaTab = "photos" | "albums" | "music" | "video";
 
-const MEDIA_TABS: { id: MediaTab; label: string; Icon: Icon; own?: boolean }[] = [
+const MEDIA_TABS: { id: MediaTab; label: string; Icon: Icon }[] = [
   { id: "photos", label: "Фото", Icon: PhotoIcon },
   { id: "albums", label: "Альбомы", Icon: AlbumsIcon },
   { id: "music", label: "Музыка", Icon: MusicIcon },
   { id: "video", label: "Видео", Icon: VideoIcon },
-  { id: "articles", label: "Статьи", Icon: ArticlesIcon, own: true },
 ];
 const PHOTOS_PREVIEW = 6;
 
@@ -392,7 +390,6 @@ function MediaCard({ owner, isMe, album }: { owner: Person; isMe: boolean; album
   const [uploading, setUploading] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [toDelete, setToDelete] = useState<Photo | null>(null);
-  const tabs = MEDIA_TABS.filter((t) => isMe || !t.own);
   const visible = photos.slice(0, PHOTOS_PREVIEW);
 
   const upload = async (files: File[]) => {
@@ -433,7 +430,7 @@ function MediaCard({ owner, isMe, album }: { owner: Person; isMe: boolean; album
       {...(isMe ? dropProps : {})}
     >
       <div className="media__tabs" role="tablist">
-        {tabs.map(({ id, label, Icon }) => (
+        {MEDIA_TABS.map(({ id, label, Icon }) => (
           <button
             key={id}
             role="tab"
@@ -510,10 +507,8 @@ function MediaCard({ owner, isMe, album }: { owner: Person; isMe: boolean; album
         <AlbumsTab owner={owner} isMe={isMe} photos={photos} />
       ) : tab === "music" ? (
         <MusicTab owner={owner} isMe={isMe} />
-      ) : tab === "video" ? (
-        <VideoTab owner={owner} isMe={isMe} />
       ) : (
-        <ArticlesTab />
+        <VideoTab owner={owner} isMe={isMe} />
       )}
 
       {dragOver && isMe && (
@@ -669,7 +664,11 @@ function Wall({ owner, isMe, feed }: { owner: Person; isMe: boolean; feed: Posts
   );
 }
 
-// ---------- Друзья человека (правая колонка) ----------
+// На компьютере в колонке видно 8 друзей и 5 подписок (лишнее прячет CSS),
+// на телефоне — плитка с аватарками внахлёст
+const MINI_STRIP_LIMIT = 8;
+
+// ---------- Друзья человека (правая колонка, на телефоне — над фото и записями) ----------
 function FriendsCard({ owner, isMe }: { owner: Person; isMe: boolean }) {
   const mine = useFriends();
   const theirs = useFriendsOf(isMe ? null : owner.id);
@@ -685,6 +684,7 @@ function FriendsCard({ owner, isMe }: { owner: Person; isMe: boolean }) {
         href={isMe ? "#friends" : undefined}
       >
         Друзья <span className="muted">{loading ? "" : friends.length}</span>
+        <ChevronRightIcon size={20} className="card__header-chevron" />
       </a>
       {loading ? (
         <div className="media__empty" role="status">
@@ -692,7 +692,7 @@ function FriendsCard({ owner, isMe }: { owner: Person; isMe: boolean }) {
         </div>
       ) : friends.length ? (
         <div className="friends-mini friends-mini--wide">
-          {friends.slice(0, 8).map((p) => (
+          {friends.slice(0, MINI_STRIP_LIMIT).map((p) => (
             <a key={p.id} href={`#user/${p.id}`}>
               <Avatar name={p.name} color={p.color} src={p.avatar} size={64} />
               <span>{p.firstName}</span>
@@ -729,9 +729,10 @@ function SubscriptionsCard({ userId, isMe }: { userId: string; isMe: boolean }) 
         href={isMe ? "#communities" : undefined}
       >
         Подписки <span className="muted">{communities.length}</span>
+        <ChevronRightIcon size={20} className="card__header-chevron" />
       </a>
       <div className="subs-list">
-        {communities.slice(0, 5).map((c) => (
+        {communities.slice(0, MINI_STRIP_LIMIT).map((c) => (
           <a key={c.id} href={`#club/${c.id}`} className="subs-item">
             <Avatar
               name={c.name}
@@ -1009,12 +1010,16 @@ export default function Profile({ userId, onNavigate }: { userId: string; onNavi
       )}
 
       <div className="columns columns--profile">
-        <div>
-          <MediaCard owner={person} isMe={isMe} album={album} />
-          {canPost && (
-            <CreatePost owner={person} isMe={isMe} onPublish={feed.publish} />
-          )}
-          <Wall owner={person} isMe={isMe} feed={feed} />
+        <div className="profile-main">
+          <div className="profile-main__media">
+            <MediaCard owner={person} isMe={isMe} album={album} />
+          </div>
+          <div className="profile-main__wall">
+            {canPost && (
+              <CreatePost owner={person} isMe={isMe} onPublish={feed.publish} />
+            )}
+            <Wall owner={person} isMe={isMe} feed={feed} />
+          </div>
         </div>
 
         <aside className="columns__side">
