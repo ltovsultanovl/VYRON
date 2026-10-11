@@ -6197,3 +6197,111 @@ textarea {
     padding: 0;
   }
 }
+
+/* =========================================================
+   Мессенджер занимает ровно экран: страница под ним не прокручивается,
+   листаются только список чатов и переписка — поиск, папки и шапка чата стоят на месте
+   ========================================================= */
+.layout:has(.messenger) {
+  padding-bottom: 16px;
+}
+.messenger {
+  margin-bottom: 0;
+}
+/* Докрутили список до конца — прокрутка не «перетекает» на страницу */
+.im-list__items,
+.chat__body {
+  overscroll-behavior: contain;
+}
+@media (max-width: 760px) {
+  .layout:has(.messenger) {
+    padding-bottom: calc(var(--nav-h) + 8px + var(--safe-bottom));
+  }
+  /* На телефоне страница с мессенджером не двигается совсем, даже «резинкой» iOS */
+  html:has(.messenger),
+  body:has(.messenger) {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+}
+/* Телефон горизонтально: экран ниже 480 px — мессенджер подстраивается под него */
+@media (max-height: 500px) {
+  .messenger {
+    min-height: 0;
+  }
+}
+/* Левое меню не выше экрана: на низких экранах (телефон горизонтально) листается само */
+.sidebar {
+  max-height: calc(100vh - var(--header-total) - 32px); /* запасной вариант для старых браузеров */
+  max-height: calc(100dvh - var(--header-total) - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+/* =========================================================
+   Вкладки разделов закреплены под шапкой сайта, как в приложении VK:
+   листаешь список — вкладки («Мои друзья / Заявки», «Новости / Все записи»…) остаются наверху
+   ========================================================= */
+.card > .wall-tabs:first-child,
+.card > .wall-head:first-child,
+.bookmarks__head {
+  position: sticky;
+  top: var(--header-total);
+  z-index: 6;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--card);
+  box-shadow: 0 1px 0 var(--separator);
+}
+.bookmarks__head {
+  border-radius: var(--radius);
+}
+
+@media (max-width: 960px) {
+  /* Одна колонка: flex вместо grid, чтобы меню раздела (вкладки сверху) могло «прилипать»
+     на всю высоту страницы, а не только в пределах своей строки сетки */
+  .columns {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch; /* у сетки было start — во flex это сжало бы блоки по содержимому */
+  }
+  .columns > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .columns__side:has(> .side-menu:only-child) {
+    position: sticky;
+    top: var(--header-total);
+    z-index: 6;
+  }
+}
+@media (max-width: 760px) {
+  /* Под шапкой без зазора, промежуток уходит вниз */
+  .columns__side:has(> .side-menu:only-child) .side-menu,
+  .bookmarks__head {
+    box-shadow: 0 1px 0 var(--separator);
+  }
+}
+
+/* =========================================================
+   Шапка закреплена намертво: не уезжает при прокрутке, «резинке» iPhone
+   и не прыгает при переходах между разделами
+   ========================================================= */
+.header {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+}
+/* Место под шапку: содержимое начинается сразу под ней */
+.header + .layout {
+  margin-top: var(--header-total);
+}
+/* Страница не оттягивается «резинкой» за край — шапка и вкладки стоят на месте */
+html,
+body {
+  overscroll-behavior-y: none;
+}
