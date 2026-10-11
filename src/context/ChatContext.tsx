@@ -85,6 +85,9 @@ const TYPING_TIMEOUT = 3500; // столько держится «печатае
 const TYPING_THROTTLE = 2000; // не чаще раза в 2 с шлём «я печатаю»
 const MESSAGES_LIMIT = 1000;
 
+// Человек «на сайте»: вкладка видна и есть интернет
+const isPresent = () => document.visibilityState === "visible" && navigator.onLine;
+
 const upsertById = <T extends { id: number | string }>(list: T[], row: T): T[] => {
   const i = list.findIndex((m) => m.id === row.id);
   if (i === -1) return [...list, row];
@@ -272,7 +275,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             }, TYPING_TIMEOUT);
           })
           .subscribe((state) => {
-            if (state === "SUBSCRIBED") presence.track({ at: Date.now() });
+            // «В сети» — только пока сайт на экране (не свёрнут, вкладка активна, есть интернет)
+            if (state === "SUBSCRIBED" && isPresent()) presence.track({ at: Date.now() });
           });
         channels.push(presence);
         presenceRef.current = presence;
@@ -316,6 +320,33 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       Object.values(typingTimers.current).forEach(clearTimeout);
     };
   }, [myId, attempt, loadPeople, showSnackbar]);
+
+  // ---------- «В сети» / «был недавно» ----------
+  // Свернули браузер, ушли на другую вкладку, закрыли сайт или пропал интернет — сразу не в сети.
+  // Вернулись — снова в сети. Если вкладку убили без события (разрядился телефон),
+  // сервер сам уберёт статус, когда соединение оборвётся
+  useEffect(() => {
+    if (status !== "ready") return;
+    const update = () => {
+      const presence = presenceRef.current;
+      if (!presence) return;
+      if (isPresent()) presence.track({ at: Date.now() });
+      else presence.untrack();
+    };
+    const leave = () => presenceRef.current?.untrack();
+    document.addEventListener("visibilitychange", update);
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    window.addEventListener("pageshow", update); // вернулись на сайт кнопкой «Назад»
+    window.addEventListener("pagehide", leave); // закрыли вкладку или ушли на другой сайт
+    return () => {
+      document.removeEventListener("visibilitychange", update);
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+      window.removeEventListener("pageshow", update);
+      window.removeEventListener("pagehide", leave);
+    };
+  }, [status]);
 
   // ---------- Действия ----------
   // sendMessage(to, { text, file, voice, shared }):

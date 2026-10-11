@@ -6020,3 +6020,21 @@ textarea {
 .pill--saved {
   color: var(--accent);
 }
+
+/* «в сети» / «был недавно» рядом с именем на странице человека */
+.profile-info__online {
+  margin-left: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.profile-info__online--on {
+  color: var(--online);
+}
+@media (max-width: 760px) {
+  .profile-info__online {
+    display: block;
+    margin: 2px 0 0;
+  }
+}

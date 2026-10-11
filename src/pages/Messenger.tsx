@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import Avatar from "../components/Avatar";
 import EmojiPicker from "../components/EmojiPicker";
 import BlockModal from "../components/BlockModal";
+import { lastSeen } from "../utils";
 import SharedCard from "../components/SharedCard";
 import Modal from "../components/Modal";
 import { useSnackbar } from "../components/Snackbar";
@@ -1014,7 +1015,7 @@ export default function Messenger<R>({
                     ? "печатает…"
                     : active.person.online
                       ? "в сети"
-                      : "был(а) недавно"}
+                      : lastSeen(active.person.gender)}
               </div>
             </div>
             <button className="icon-btn" title="Поиск по сообщениям" onClick={() => setSearch({ q: "", currentId: null })}>

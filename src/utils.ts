@@ -122,3 +122,7 @@ export const formatDialogTime = (value: DateInput | null | undefined): string =>
 
 // Текст пойманной ошибки (в catch у неё тип unknown)
 export const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+// «был недавно» / «была недавно» — как в VK, когда человек не в сети
+export const lastSeen = (gender?: "male" | "female") =>
+  gender === "female" ? "была недавно" : gender === "male" ? "был недавно" : "был(а) недавно";

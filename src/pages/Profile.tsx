@@ -53,7 +53,7 @@ import {
 } from "../resources";
 import { fetchUserCommunities } from "../api";
 import { explainError, removeImage, uploadImage } from "../api";
-import { readImage } from "../utils";
+import { lastSeen, readImage } from "../utils";
 import type { PostsFeed, PublishData } from "../resources";
 import type { CommunityBrief, Navigate, Person, Photo, Profile as ProfileType } from "../types";
 
@@ -809,6 +809,7 @@ export default function Profile({ userId, onNavigate }: { userId: string; onNavi
   const { relationTo } = useFriends();
   const { openChat } = useChatActions();
   const { isBlocked, hasBlockedMe, unblock, refreshBlockedMe } = useBlocks();
+  const onlineIds = useOnlineIds();
   const isMe = userId === myId;
   const other = useUserProfile(isMe ? myId : userId);
   // Не заблокировал ли меня хозяин страницы — проверяем при каждом открытии
@@ -907,7 +908,14 @@ export default function Profile({ userId, onNavigate }: { userId: string; onNavi
             album={album}
           />
           <div className="profile-info__meta">
-            <h1 className="profile-info__name">{name}</h1>
+            <h1 className="profile-info__name">
+              {name}
+              {!isMe && (
+                <span className={`profile-info__online ${onlineIds.has(profile.id) ? "profile-info__online--on" : ""}`}>
+                  {onlineIds.has(profile.id) ? "в сети" : lastSeen(profile.gender)}
+                </span>
+              )}
+            </h1>
             <Status profile={profile} editable={isMe} />
             <div className="profile-info__details">
               {profile.contacts.city && (

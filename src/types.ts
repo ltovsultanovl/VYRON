@@ -323,6 +323,7 @@ export interface ChatPeer {
   color: string;
   avatar: string | null;
   online: boolean;
+  gender?: Gender; // «был» / «была» недавно
   isCommunity?: boolean;
   communityId?: number;
 }
