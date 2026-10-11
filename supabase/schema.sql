@@ -2044,3 +2044,60 @@ revoke update on public.bookmarks from authenticated;
 drop trigger if exists bookmarks_rate_limit on public.bookmarks;
 create trigger bookmarks_rate_limit before insert on public.bookmarks
   for each row execute function public.rate_limit('user_id', '200', '1 hour');
+
+-- =========================================================
+-- Голосовые как в VK: «прослушано». Пока получатель не прослушал —
+-- у обоих синяя точка у голосового. Отмечает только получатель и только своё голосовое
+-- =========================================================
+alter table public.messages add column if not exists listened_at timestamptz;
+
+create or replace function public.mark_voice_listened(p_id bigint)
+returns void
+language sql security definer set search_path = public
+as $$
+  update public.messages
+  set listened_at = now()
+  where id = p_id
+    and recipient_id = auth.uid()
+    and attachment_type = 'voice'
+    and listened_at is null;
+$$;
+
+revoke execute on function public.mark_voice_listened(bigint) from public, anon;
+grant execute on function public.mark_voice_listened(bigint) to authenticated;
+
+-- =========================================================
+-- «Очистить историю» как в VK: вся переписка скрывается только у того, кто очистил.
+-- У собеседника сообщения остаются. Сообщения, скрытые обоими, удаляются совсем
+-- =========================================================
+create or replace function public.clear_chat_for_me(p_peer uuid)
+returns integer
+language plpgsql security definer set search_path = public
+as $$
+declare
+  me uuid := auth.uid();
+  sent integer;
+  received integer;
+begin
+  if me is null then
+    raise exception 'Нужно войти';
+  end if;
+
+  update public.messages set hidden_by_sender = true
+    where sender_id = me and recipient_id = p_peer and not hidden_by_sender;
+  get diagnostics sent = row_count;
+
+  update public.messages set hidden_by_recipient = true
+    where sender_id = p_peer and recipient_id = me and not hidden_by_recipient;
+  get diagnostics received = row_count;
+
+  delete from public.messages
+    where ((sender_id = me and recipient_id = p_peer) or (sender_id = p_peer and recipient_id = me))
+      and hidden_by_sender and hidden_by_recipient;
+
+  return sent + received;
+end;
+$$;
+
+revoke execute on function public.clear_chat_for_me(uuid) from public, anon;
+grant execute on function public.clear_chat_for_me(uuid) to authenticated;

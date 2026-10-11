@@ -29,6 +29,9 @@ export default function OnlineMessenger() {
     retryMessage,
     deleteMessage,
     markRead,
+    markListened,
+    clearChat,
+    deleteChat,
     sendTyping,
     retry,
     togglePin,
@@ -49,8 +52,10 @@ export default function OnlineMessenger() {
       markUnread,
       block: (id: string) => void block(asPerson(id)),
       unblock: (id: string) => void unblock(asPerson(id)),
+      clearHistory: (id: string) => void clearChat(id),
+      deleteChat: (id: string) => void deleteChat(id),
     };
-  }, [togglePin, toggleArchive, markUnread, block, unblock, dialogs]);
+  }, [togglePin, toggleArchive, markUnread, block, unblock, dialogs, clearChat, deleteChat]);
 
   // Готовые сообщения кешируем по исходной строке: если строка та же, отдаём тот же объект —
   // тогда «печатает…», «в сети» и новые сообщения не перерисовывают уже показанные
@@ -92,6 +97,7 @@ export default function OnlineMessenger() {
             time: formatTime(m.created_at),
             day: formatDay(m.created_at),
             state: messageState(m, out),
+            listened: m.attachment_type === "voice" ? !!m.listened_at : undefined,
             // «Удалить у всех» — своё, уже на сервере и не старше суток (как в VK)
             deletable: !d.isCommunity,
             canDeleteForAll:
@@ -163,6 +169,7 @@ export default function OnlineMessenger() {
         sendMessage(id, { text, file, voice });
       }}
       chatActions={chatActions}
+      onListened={(m) => markListened(m.id)}
       onTyping={sendTyping}
       onRetry={(m) => retryMessage(m.raw)}
       onDelete={(m, forAll) => deleteMessage(m.raw, { forAll })}

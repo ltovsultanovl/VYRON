@@ -1029,6 +1029,9 @@ export const fetchPhoto = async (id: number | string): Promise<SharedPhoto | nul
 // «У себя» — скрыть только для меня (у собеседника сообщение останется)
 export const deleteMessageForMe = async (id: number) => unwrap(await supabase.rpc("delete_message_for_me", { p_id: id }));
 
+// «Очистить историю» — вся переписка скрывается только у меня
+export const clearChatForMe = async (peerId: string) => unwrap<number>(await supabase.rpc("clear_chat_for_me", { p_peer: peerId }));
+
 // «У всех» — удалить совсем; файл вложения тоже удаляем
 export const deleteMessageForAll = async (id: number) => {
   const path = unwrap<string | null>(await supabase.rpc("delete_message_for_all", { p_id: id }));
@@ -1539,3 +1542,6 @@ export const fetchBookmarkedCommunities = async () => {
     ids,
   );
 };
+
+// Голосовое прослушано (отмечает только получатель — проверяет база)
+export const markVoiceListened = (messageId: number | string) => rpc("mark_voice_listened", { p_id: Number(messageId) });

@@ -27,6 +27,8 @@ import {
   deleteMessageForMe,
   explainError,
   fetchChatSettings,
+  clearChatForMe,
+  markVoiceListened,
   fetchCommunityBrief,
   saveChatSetting,
   toChatSetting,
@@ -43,7 +45,7 @@ import {
 import { useProfile } from "./ProfileContext";
 import { useFriends } from "./FriendsContext";
 import { useSnackbar } from "../components/Snackbar";
-import { useResume } from "../hooks";
+import { useResume, useStoredState } from "../hooks";
 
 type ClubInfo = Pick<CommunityBrief, "id" | "name" | "color" | "avatar">;
 
@@ -63,6 +65,9 @@ interface ChatValue {
   retryMessage: (message: MessageRow) => void;
   deleteMessage: (message: MessageRow, options?: { forAll?: boolean }) => Promise<boolean>;
   markRead: (peerId: string) => Promise<void>;
+  markListened: (messageId: number | string) => void;
+  clearChat: (peerId: string, doneText?: string) => void;
+  deleteChat: (peerId: string) => void;
   sendTyping: (to: string) => void;
   retry: () => void;
   // Меню «⋯» чата: закрепить, в архив, отметить непрочитанным
@@ -149,6 +154,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [activePeerId, setActivePeerId] = useState<string | null>(null);
   const [fileUrls, setFileUrls] = useState<Record<string, string>>({}); // путь вложения → временная ссылка
   const [settings, setSettings] = useState<Record<string, ChatSetting>>({}); // настройки чатов по собеседнику
+  // «Удалённые» чаты: прячем из списка, пока в них пусто (новое сообщение вернёт чат)
+  const [deletedPeers, setDeletedPeers] = useStoredState<string[]>(`chat:deleted:${myId}`, []);
   const settingsRef = useRef(settings);
   useEffect(() => {
     settingsRef.current = settings;
@@ -464,6 +471,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       .catch(() => missing.forEach((path) => requestedUrls.current.delete(path)));
   }, [messages, fileUrls]);
 
+  // Голосовое прослушано: сразу у себя, затем в базе (у отправителя пропадёт синяя точка)
+  const markListened = useCallback((messageId: number | string) => {
+    if (String(messageId).startsWith("tmp-")) return;
+    setMessages((list) =>
+      list.map((m) => (m.id === messageId && !m.listened_at ? { ...m, listened_at: new Date().toISOString() } : m)),
+    );
+    markVoiceListened(messageId).catch(() => {});
+  }, []);
+
   const markRead = useCallback(
     async (peerId: string) => {
       const now = new Date().toISOString();
@@ -510,9 +526,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const openChat = useCallback(
     (person: Person) => {
       setPeople((map) => (map[person.id] ? map : { ...map, [person.id]: person }));
+      setDeletedPeers((list) => (list.includes(person.id) ? list.filter((id) => id !== person.id) : list));
       setActivePeerId(person.id);
     },
-    [],
+    [setDeletedPeers],
   );
 
   // Удаление: forAll — у всех (своё и не старше суток), иначе только у себя.
@@ -537,6 +554,40 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   );
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
+
+  // «Очистить историю»: убираем переписку с экрана сразу, потом в базе — только у меня.
+  // Неотправленные (tmp-) не трогаем: они ещё в пути
+  const clearChat = useCallback(
+    async (peerId: string, doneText = "История сообщений очищена") => {
+      const inChat = (m: MessageRow) =>
+        !String(m.id).startsWith("tmp-") &&
+        ((m.sender_id === myId && m.recipient_id === peerId) || (m.sender_id === peerId && m.recipient_id === myId));
+      let removed: MessageRow[] = [];
+      setMessages((list) => {
+        removed = list.filter(inChat);
+        return list.filter((m) => !inChat(m));
+      });
+      try {
+        await clearChatForMe(peerId);
+        if (doneText) showSnackbar(doneText);
+      } catch (e) {
+        setMessages((list) => [...list, ...removed].sort(byTime));
+        showSnackbar(`Не удалось очистить: ${explainError(e)}`, "error");
+      }
+    },
+    [myId, showSnackbar],
+  );
+
+  // «Удалить чат»: очищаем историю у себя и убираем чат из списка
+  const deleteChat = useCallback(
+    async (peerId: string) => {
+      setDeletedPeers((list) => (list.includes(peerId) ? list : [...list, peerId]));
+      setActivePeerId((current) => (current === peerId ? null : current));
+      await clearChat(peerId, "");
+      showSnackbar("Чат удалён");
+    },
+    [clearChat, setDeletedPeers, showSnackbar],
+  );
 
   // ---------- Догрузка после перерыва ----------
   // Каналы реального времени переподключаются сами, но сообщения, пришедшие без связи, в них не попадут.
@@ -695,8 +746,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         if (a.last && b.last) return byTime(b.last, a.last);
         if (a.last || b.last) return a.last ? -1 : 1;
         return Number(b.person.online) - Number(a.person.online);
-      });
-  }, [people, friends, messages, myId, onlineIds, typingIds, clubs, clubMessages, settings]);
+      })
+      // Удалённый чат не показываем, пока в нём нет сообщений
+      .filter((d) => d.messages.length > 0 || !deletedPeers.includes(d.person.id));
+  }, [people, friends, messages, myId, onlineIds, typingIds, clubs, clubMessages, settings, deletedPeers]);
 
   // Отмеченный «непрочитанным» чат без новых сообщений считается за один
   const unreadTotal = dialogs.reduce((sum, d) => sum + (d.unread || (d.markedUnread ? 1 : 0)), 0);
@@ -718,6 +771,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       retryMessage,
       deleteMessage,
       markRead,
+      markListened,
+      clearChat,
+      deleteChat,
       sendTyping,
       retry,
       togglePin,
@@ -725,7 +781,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       markUnread,
       clearMarkedUnread,
     }),
-    [status, error, myId, dialogs, fileUrls, unreadTotal, onlineIds, activePeerId, openChat, openCommunityChat, sendMessage, retryMessage, deleteMessage, markRead, sendTyping, retry, togglePin, toggleArchive, markUnread, clearMarkedUnread],
+    [status, error, myId, dialogs, fileUrls, unreadTotal, onlineIds, activePeerId, openChat, openCommunityChat, sendMessage, retryMessage, deleteMessage, markRead, markListened, clearChat, deleteChat, sendTyping, retry, togglePin, toggleArchive, markUnread, clearMarkedUnread],
   );
 
   const actions = useMemo<ChatActions>(

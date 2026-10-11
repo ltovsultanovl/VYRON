@@ -167,12 +167,15 @@ interface RecordingSession {
   chunks: Blob[];
   audioContext: AudioContext;
   timer: ReturnType<typeof setInterval>;
-  startedAt: number;
   samples: number[];
+  recorded: number; // мс записи без пауз
+  lastTick: number;
+  paused: boolean;
 }
 
 export function useVoiceRecorder({ maxSeconds = 300, onLimit }: { maxSeconds?: number; onLimit?: () => void } = {}) {
   const [recording, setRecording] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [levels, setLevels] = useState<number[]>([]);
   const session = useRef<RecordingSession | null>(null);
@@ -189,6 +192,7 @@ export function useVoiceRecorder({ maxSeconds = 300, onLimit }: { maxSeconds?: n
     s.audioContext.close().catch(() => { });
     session.current = null;
     setRecording(false);
+    setPaused(false);
     setSeconds(0);
     setLevels([]);
   }, []);
@@ -211,21 +215,29 @@ export function useVoiceRecorder({ maxSeconds = 300, onLimit }: { maxSeconds?: n
     audioContext.createMediaStreamSource(stream).connect(analyser);
     const buffer = new Uint8Array(analyser.fftSize);
 
-    const startedAt = Date.now();
     const samples: number[] = [];
     const timer = setInterval(() => {
+      const s = session.current;
+      if (!s) return;
+      const now = Date.now();
+      if (s.paused) {
+        s.lastTick = now; // на паузе время и волна стоят
+        return;
+      }
+      s.recorded += now - s.lastTick;
+      s.lastTick = now;
       analyser.getByteTimeDomainData(buffer);
       let sum = 0;
       for (const v of buffer) sum += ((v - 128) / 128) ** 2;
       const level = Math.sqrt(sum / buffer.length);
       samples.push(level);
       setLevels((prev) => [...prev.slice(-29), level]);
-      const elapsed = (Date.now() - startedAt) / 1000;
+      const elapsed = s.recorded / 1000;
       setSeconds(Math.floor(elapsed));
       if (elapsed >= maxSeconds) onLimitRef.current?.();
     }, SAMPLE_MS);
 
-    session.current = { stream, recorder, chunks, audioContext, timer, startedAt, samples };
+    session.current = { stream, recorder, chunks, audioContext, timer, samples, recorded: 0, lastTick: Date.now(), paused: false };
     recorder.start(250);
     setRecording(true);
   }, [maxSeconds]);
@@ -238,7 +250,8 @@ export function useVoiceRecorder({ maxSeconds = 300, onLimit }: { maxSeconds?: n
         s.recorder.onstop = () => {
           const type = (s.recorder.mimeType || "audio/webm").split(";")[0];
           const blob = new Blob(s.chunks, { type });
-          const duration = Math.round((Date.now() - s.startedAt) / 100) / 10;
+          if (!s.paused) s.recorded += Date.now() - s.lastTick;
+          const duration = Math.round(s.recorded / 100) / 10;
           const waveform = toWaveform(s.samples);
           cleanup();
           resolve({ blob, duration, waveform });
@@ -256,7 +269,27 @@ export function useVoiceRecorder({ maxSeconds = 300, onLimit }: { maxSeconds?: n
     cleanup();
   }, [cleanup]);
 
-  return { recording, seconds, levels, start, stop, cancel };
+  // Пауза и продолжение — как в VK, когда запись закреплена
+  const pause = useCallback(() => {
+    const s = session.current;
+    if (!s || s.paused || s.recorder.state !== "recording") return;
+    s.recorded += Date.now() - s.lastTick;
+    s.lastTick = Date.now();
+    s.paused = true;
+    s.recorder.pause();
+    setPaused(true);
+  }, []);
+
+  const resume = useCallback(() => {
+    const s = session.current;
+    if (!s || !s.paused) return;
+    s.lastTick = Date.now();
+    s.paused = false;
+    s.recorder.resume();
+    setPaused(false);
+  }, []);
+
+  return { recording, paused, seconds, levels, start, stop, cancel, pause, resume };
 }
 
 // Видна ли вкладка сейчас: свернули окно или переключились на другую вкладку — false

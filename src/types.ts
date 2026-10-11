@@ -301,6 +301,7 @@ export interface MessageRow {
   shared_id?: string | null;
   hidden_by_sender?: boolean;
   hidden_by_recipient?: boolean;
+  listened_at?: string | null; // голосовое прослушано получателем
   // Только на клиенте
   pending?: boolean;
   failed?: boolean;

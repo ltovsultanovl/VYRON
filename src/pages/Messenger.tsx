@@ -1,9 +1,11 @@
-import { memo, useCallback, useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
-import type { AttachmentType, ChatPeer, Shared, VoiceMeta } from "../types";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from "react";
+import type { AttachmentType, ChatPeer, Shared, Track, VoiceMeta } from "../types";
+import { usePlayer } from "../context/PlayerContext";
 import { createPortal } from "react-dom";
 import Avatar from "../components/Avatar";
 import EmojiPicker from "../components/EmojiPicker";
 import BlockModal from "../components/BlockModal";
+import ConfirmModal from "../components/ConfirmModal";
 import { lastSeen } from "../utils";
 import SharedCard from "../components/SharedCard";
 import Modal from "../components/Modal";
@@ -24,6 +26,7 @@ import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronUpIcon,
+  LockIcon,
   PinIcon,
   UnreadIcon,
   CamcorderIcon,
@@ -83,6 +86,7 @@ export interface ViewMessage<R = unknown> {
   state?: MessageState;
   deletable?: boolean;
   canDeleteForAll?: boolean;
+  listened?: boolean; // голосовое: прослушано получателем
   raw: R;
 }
 
@@ -297,39 +301,118 @@ function Lightbox({ url, onClose }: { url: string; onClose: () => void }) {
   );
 }
 
+// Как часы: секунды вниз (таймер записи и длительность голосового совпадают)
 const formatDuration = (sec: number) => {
-  const s = Math.max(0, Math.round(sec || 0));
+  const s = Math.max(0, Math.floor(sec || 0));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 };
 
-// Голосовое сообщение как в VK: кнопка ▶, волна с прогрессом (клик — перемотка) и время
-function VoicePlayer({ url, meta, pending }: { url: string | null; meta?: VoiceMeta | null; pending?: boolean }) {
+// Скорость голосовых общая для всех и запоминается, как в VK: 1x → 1.5x → 2x
+const VOICE_RATES = [1, 1.5, 2];
+let voiceRate = (() => {
+  try {
+    const saved = Number(localStorage.getItem("voiceRate"));
+    return VOICE_RATES.includes(saved) ? saved : 1;
+  } catch {
+    return 1;
+  }
+})();
+// Одновременно играет только одно голосовое
+let playingVoice: HTMLAudioElement | null = null;
+
+// Голосовое сообщение как в VK: ▶, волна с прогрессом (тап или протяжка пальцем — перемотка), время,
+// скорость и синяя точка «не прослушано». Закончилось — само включается следующее непрослушанное
+function VoicePlayer({
+  url,
+  meta,
+  pending,
+  out = false,
+  listened = true,
+  onListened,
+}: {
+  url: string | null;
+  meta?: VoiceMeta | null;
+  pending?: boolean;
+  out?: boolean;
+  listened?: boolean;
+  onListened?: () => void;
+}) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
+  const [rate, setRate] = useState(voiceRate);
   const [failed, setFailed] = useState(false);
+  const playedRef = useRef<HTMLDivElement>(null);
   const duration = meta?.duration || 0;
-  const bars: number[] = meta?.waveform?.length ? meta.waveform : Array(48).fill(20);
-  const progress = duration ? Math.min(time / duration, 1) : 0;
+  // Волна мягче: каждый столбик сглаживаем с соседями, чтобы не было резких зубцов
+  const bars = useMemo(() => {
+    const raw: number[] = meta?.waveform?.length ? meta.waveform : Array(48).fill(20);
+    return raw.map((h, i) => ((raw[i - 1] ?? h) + 2 * h + (raw[i + 1] ?? h)) / 4);
+  }, [meta?.waveform]);
+
+  // Закрашенная часть волны едет плавно, каждый кадр, а не прыжками раз в четверть секунды
+  const paint = useCallback(
+    (seconds: number) => {
+      const el = playedRef.current;
+      if (el) el.style.clipPath = `inset(0 ${100 - (duration ? Math.min(seconds / duration, 1) : 0) * 100}% 0 0)`;
+    },
+    [duration],
+  );
+  useEffect(() => {
+    if (!playing) return;
+    let frame = requestAnimationFrame(function tick() {
+      const audio = audioRef.current;
+      if (audio) paint(audio.currentTime);
+      frame = requestAnimationFrame(tick);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [playing, paint]);
+  useEffect(() => {
+    if (!playing) paint(time);
+  }, [playing, time, paint]);
 
   const toggle = () => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (audio.paused) audio.play().catch(() => setFailed(true));
-    else audio.pause();
+    if (audio.paused) {
+      audio.playbackRate = voiceRate;
+      audio.play().catch(() => setFailed(true));
+    } else audio.pause();
   };
 
-  const seek = (e: MouseEvent<HTMLDivElement>) => {
+  const seekAt = (clientX: number, wave: HTMLElement) => {
     const audio = audioRef.current;
     if (!audio || !duration) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const next = ((e.clientX - rect.left) / rect.width) * duration;
+    const rect = wave.getBoundingClientRect();
+    const next = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1) * duration;
     audio.currentTime = next;
     setTime(next);
+    paint(next);
   };
 
+  const changeRate = () => {
+    voiceRate = VOICE_RATES[(VOICE_RATES.indexOf(voiceRate) + 1) % VOICE_RATES.length];
+    try {
+      localStorage.setItem("voiceRate", String(voiceRate));
+    } catch {
+      /* без сохранения — только до перезагрузки */
+    }
+    setRate(voiceRate);
+    if (audioRef.current) audioRef.current.playbackRate = voiceRate;
+  };
+
+  // Следующее непрослушанное входящее голосовое в этой переписке
+  const playNext = () => {
+    const root = rootRef.current;
+    const all = [...(root?.closest(".chat__body")?.querySelectorAll<HTMLElement>(".voice") ?? [])];
+    const next = all.slice(all.indexOf(root!) + 1).find((v) => v.dataset.autonext === "1");
+    next?.querySelector<HTMLButtonElement>(".voice__play")?.click();
+  };
+
+  const unlistened = !listened && !pending;
   return (
-    <div className="voice">
+    <div className={`voice ${unlistened ? "voice--new" : ""}`} ref={rootRef} data-autonext={!out && unlistened ? "1" : undefined}>
       <button
         type="button"
         className="voice__play"
@@ -337,28 +420,38 @@ function VoicePlayer({ url, meta, pending }: { url: string | null; meta?: VoiceM
         disabled={!url || pending || failed}
         aria-label={playing ? "Пауза" : "Слушать"}
       >
-        {pending ? (
-          <div className="chat-status__spinner" />
-        ) : playing ? (
-          <PauseIcon size={16} />
-        ) : (
-          <PlayIcon size={16} />
-        )}
+        {pending ? <div className="chat-status__spinner" /> : playing ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
       </button>
       <div className="voice__body">
-        <div className="voice__wave" onClick={seek}>
-          {bars.map((h, i) => (
-            <span
-              key={i}
-              className={i / bars.length < progress ? "voice__bar--played" : ""}
-              style={{ height: `${Math.max(12, h)}%` }}
-            />
-          ))}
+        <div
+          className="voice__wave"
+          onPointerDown={(e) => {
+            e.currentTarget.setPointerCapture(e.pointerId);
+            seekAt(e.clientX, e.currentTarget);
+          }}
+          onPointerMove={(e) => e.currentTarget.hasPointerCapture(e.pointerId) && seekAt(e.clientX, e.currentTarget)}
+        >
+          <div className="voice__bars">
+            {bars.map((h, i) => (
+              <span key={i} style={{ height: `${Math.max(14, h)}%` }} />
+            ))}
+          </div>
+          <div className="voice__bars voice__bars--played" ref={playedRef} style={{ clipPath: "inset(0 100% 0 0)" }}>
+            {bars.map((h, i) => (
+              <span key={i} style={{ height: `${Math.max(14, h)}%` }} />
+            ))}
+          </div>
         </div>
-        <span className="voice__time">
-          {failed
-            ? "Не удалось загрузить"
-            : formatDuration(playing || time ? time : duration)}
+        <span className="voice__meta">
+          <span className="voice__time">
+            {failed ? "Не удалось загрузить" : formatDuration(playing || time ? time : Math.max(duration, duration > 0 ? 1 : 0))}
+          </span>
+          {unlistened && <span className="voice__dot" title={out ? "Ещё не прослушано" : "Не прослушано"} />}
+          {(playing || time > 0) && (
+            <button type="button" className="voice__rate" onClick={changeRate} title="Скорость воспроизведения">
+              {rate}x
+            </button>
+          )}
         </span>
       </div>
       {url && (
@@ -366,11 +459,21 @@ function VoicePlayer({ url, meta, pending }: { url: string | null; meta?: VoiceM
           ref={audioRef}
           src={url}
           preload="metadata"
-          onPlay={() => setPlaying(true)}
+          onPlay={(e) => {
+            const audio = e.currentTarget;
+            if (playingVoice && playingVoice !== audio) playingVoice.pause();
+            playingVoice = audio;
+            audio.playbackRate = voiceRate;
+            setRate(voiceRate);
+            setPlaying(true);
+            if (!out && !listened) onListened?.();
+          }}
           onPause={() => setPlaying(false)}
-          onEnded={() => {
+          onEnded={(e) => {
             setPlaying(false);
             setTime(0);
+            if (playingVoice === e.currentTarget) playingVoice = null;
+            if (!out) playNext();
           }}
           onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
           onError={() => setFailed(true)}
@@ -380,35 +483,63 @@ function VoicePlayer({ url, meta, pending }: { url: string | null; meta?: VoiceM
   );
 }
 
-// Музыка в сообщении: иконка, название трека и плеер
-function AudioAttachment({ attachment, pending }: { attachment: ChatAttachment; pending?: boolean }) {
+// «Исполнитель - Название.mp3» → { artist, title }, как подписывает треки VK
+const parseTrackName = (name?: string | null) => {
+  const base = (name || "Аудиозапись").replace(/\.[a-z0-9]{2,4}$/i, "").replace(/_/g, " ").trim();
+  const [artist, ...rest] = base.split(/\s+[-–—]\s+/);
+  return rest.length ? { artist: artist.trim(), title: rest.join(" – ").trim() } : { artist: "", title: base };
+};
+
+// Музыка в сообщении как в VK: круглая ▶, название, исполнитель и длительность.
+// Играет через общий плеер сайта — видно в шапке, музыка не прерывается при переходе в другой раздел
+function AudioAttachment({ attachment, pending, trackId }: { attachment: ChatAttachment; pending?: boolean; trackId: number }) {
+  const player = usePlayer();
+  const { url } = attachment;
+  const { artist, title } = parseTrackName(attachment.name);
+  const [duration, setDuration] = useState(0);
   const [failed, setFailed] = useState(false);
+
+  // Длительность — из заголовка файла, без скачивания всей песни
+  useEffect(() => {
+    if (!url) return;
+    const probe = new Audio();
+    probe.preload = "metadata";
+    probe.onloadedmetadata = () => Number.isFinite(probe.duration) && setDuration(probe.duration);
+    probe.onerror = () => setFailed(true);
+    probe.src = url;
+    return () => {
+      probe.onloadedmetadata = null;
+      probe.onerror = null;
+      probe.removeAttribute("src");
+    };
+  }, [url]);
+
+  const track = useMemo<Track | null>(
+    () =>
+      url
+        ? { id: trackId, uploaderId: "", artist, title, duration: Math.round(duration), url, path: "", createdAt: "" }
+        : null,
+    [url, trackId, artist, title, duration],
+  );
+  const current = !!track && player.isCurrent(track);
+  const playingNow = current && player.playing;
+
   return (
-    <div className="msg__audio">
-      <span className="msg__audio-icon">
-        {pending ? (
-          <div className="chat-status__spinner" />
-        ) : (
-          <MusicIcon size={20} />
-        )}
-      </span>
+    <div className={`msg__audio ${current ? "msg__audio--current" : ""}`}>
+      <button
+        type="button"
+        className="msg__audio-play"
+        onClick={() => track && player.toggle(track, [track], 0)}
+        disabled={!track || pending || failed}
+        aria-label={playingNow ? "Пауза" : "Слушать"}
+      >
+        {pending ? <div className="chat-status__spinner" /> : playingNow ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
+      </button>
       <span className="msg__audio-body">
-        <span className="msg__audio-name">
-          {attachment.name || "Аудиозапись"}
-        </span>
-        {failed ? (
-          <span className="msg__audio-error">Не удалось загрузить</span>
-        ) : (
-          attachment.url && (
-            <audio
-              src={attachment.url}
-              controls
-              preload="none"
-              onError={() => setFailed(true)}
-            />
-          )
-        )}
+        <span className="msg__audio-title">{title}</span>
+        <span className="msg__audio-artist">{failed ? "Не удалось загрузить" : artist || "Аудиозапись"}</span>
       </span>
+      {duration > 0 && <span className="msg__audio-duration">{formatDuration(duration)}</span>}
     </div>
   );
 }
@@ -418,19 +549,23 @@ function Attachment({
   attachment,
   pending,
   onOpen,
+  voice,
+  trackId = -1,
 }: {
   attachment: ChatAttachment;
   pending?: boolean;
   onOpen: (url: string) => void;
+  trackId?: number;
+  voice?: { out: boolean; listened: boolean; onListened: () => void };
 }) {
   const { type, url } = attachment;
   // Нет сети или ссылка устарела — показываем понятную заглушку вместо пустого пузыря.
   // Хук — до любых return: порядок хуков не должен зависеть от типа вложения
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   if (type === "audio")
-    return <AudioAttachment attachment={attachment} pending={pending} />;
+    return <AudioAttachment attachment={attachment} pending={pending} trackId={trackId} />;
   if (type === "voice")
-    return <VoicePlayer url={url} meta={attachment.meta} pending={pending} />;
+    return <VoicePlayer url={url} meta={attachment.meta} pending={pending} {...voice} />;
   const failed = url && url === failedUrl;
 
   return (
@@ -480,10 +615,12 @@ const MessageItem = memo(function MessageItem({
   onZoom,
   onAskDelete,
   onRetry,
+  onListened,
   highlight = "",
   current = false,
 }: {
   message: ViewMessage<unknown>;
+  onListened?: (message: ViewMessage<unknown>) => void;
   highlight?: string; // что подсветить (поиск по чату)
   current?: boolean; // это совпадение сейчас выбрано
   day: string | null;
@@ -492,14 +629,24 @@ const MessageItem = memo(function MessageItem({
   onAskDelete: (message: ViewMessage<unknown>) => void;
   onRetry: (message: ViewMessage<unknown>) => void;
 }) {
+  // Фото и видео показываем как в VK: во всю ширину пузыря, а без текста — вовсе без пузыря
+  const visual = m.attachment?.type === "image" ? "image" : m.attachment?.type === "video" ? "video" : null;
   return (
     <div className={`chat__item ${current ? "chat__item--current" : ""}`} data-msg-id={m.id}>
       {day && <div className="chat__day">{day}</div>}
       <div className={`msg-line ${m.out ? "msg-line--out" : ""}`}>
         <div
-          className={`msg ${m.out ? "msg--out" : ""} ${m.state === "failed" ? "msg--failed" : ""} ${m.attachment || m.shared ? "msg--with-media" : ""}`}
+          className={`msg ${m.out ? "msg--out" : ""} ${m.state === "failed" ? "msg--failed" : ""} ${m.attachment || m.shared ? "msg--with-media" : ""} ${visual ? `msg--photo msg--${visual}` : ""} ${visual && !m.text && !m.shared ? "msg--media-only" : ""}`}
         >
-          {m.attachment && <Attachment attachment={m.attachment} pending={m.state === "pending"} onOpen={onZoom} />}
+          {m.attachment && (
+            <Attachment
+              attachment={m.attachment}
+              pending={m.state === "pending"}
+              onOpen={onZoom}
+              voice={{ out: m.out, listened: m.listened !== false, onListened: () => onListened?.(m) }}
+              trackId={-Math.abs(Number(m.id) || 1)} // свой номер для плеера, не пересекается с треками раздела «Музыка»
+            />
+          )}
           {m.text && (
             <span className="msg__text">
               <Highlighted text={m.text} query={highlight} />
@@ -531,6 +678,8 @@ export interface ChatMenuActions {
   markUnread: (id: string) => void;
   block: (id: string) => void;
   unblock: (id: string) => void;
+  clearHistory?: (id: string) => void;
+  deleteChat?: (id: string) => void;
 }
 
 function ChatMenu({
@@ -546,6 +695,8 @@ function ChatMenu({
 }) {
   const menu = useDropdown();
   const [confirmBlock, setConfirmBlock] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [place, setPlace] = useState<React.CSSProperties>();
   // Меню из списка висит поверх страницы — при прокрутке закрываем, чтобы оно не отрывалось от чата
   const { open, close } = menu;
@@ -604,12 +755,44 @@ function ChatMenu({
                 if (!dialog.archived) onLeave?.();
               })}
               {!dialog.person.isCommunity &&
+                actions.clearHistory &&
+                dialog.messages.length > 0 &&
+                item("Очистить историю", TrashIcon, () => setConfirmClear(true), true)}
+              {!dialog.person.isCommunity &&
+                actions.deleteChat &&
+                item("Удалить чат", TrashIcon, () => setConfirmDelete(true), true)}
+              {!dialog.person.isCommunity &&
                 (dialog.blocked === "byMe"
                   ? item("Разблокировать", BlockIcon, () => actions.unblock(dialog.id))
                   : item("Заблокировать", BlockIcon, () => setConfirmBlock(true), true))}
             </>
           )}
         </div>
+      )}
+      {confirmClear && (
+        <ConfirmModal
+          title="Очистить историю?"
+          text="Все сообщения в этом чате будут удалены только у вас — у собеседника переписка останется. Отменить это действие нельзя."
+          confirmLabel="Очистить"
+          onClose={() => setConfirmClear(false)}
+          onConfirm={() => {
+            setConfirmClear(false);
+            actions.clearHistory?.(dialog.id);
+          }}
+        />
+      )}
+      {confirmDelete && (
+        <ConfirmModal
+          title="Удалить чат?"
+          text="Переписка будет удалена только у вас, а чат пропадёт из списка — у собеседника всё останется. Если он напишет снова, чат вернётся."
+          confirmLabel="Удалить"
+          onClose={() => setConfirmDelete(false)}
+          onConfirm={() => {
+            setConfirmDelete(false);
+            actions.deleteChat?.(dialog.id);
+            onLeave?.();
+          }}
+        />
       )}
       {confirmBlock && (
         <BlockModal
@@ -637,6 +820,7 @@ export default function Messenger<R>({
   onSend,
   onTyping,
   onRetry,
+  onListened,
   onDelete,
   emptyText = "Здесь пока нет чатов",
   startInChat = false,
@@ -648,6 +832,7 @@ export default function Messenger<R>({
   onSend: (id: string, text: string, file?: File | null, voice?: VoiceMeta | null) => void;
   onTyping?: (id: string) => void;
   onRetry?: (message: ViewMessage<R>) => void;
+  onListened?: (message: ViewMessage<R>) => void;
   onDelete?: (message: ViewMessage<R>, forAll: boolean) => void;
   emptyText?: string;
   // На телефоне видно что-то одно: список чатов или открытый чат. true — сразу чат
@@ -662,6 +847,11 @@ export default function Messenger<R>({
     onRetryRef.current = onRetry;
   });
   const retry = useCallback((m: ViewMessage<unknown>) => onRetryRef.current?.(m as ViewMessage<R>), []);
+  const onListenedRef = useRef(onListened);
+  useEffect(() => {
+    onListenedRef.current = onListened;
+  });
+  const listenedCb = useCallback((m: ViewMessage<unknown>) => onListenedRef.current?.(m as ViewMessage<R>), []);
   const askDelete = useCallback((m: ViewMessage<unknown>) => setToDelete(m as ViewMessage<R>), []);
   const [toDelete, setToDelete] = useState<ViewMessage<R> | null>(null); // сообщение, для которого открыто «Удалить?»
   const [text, setText] = useState("");
@@ -789,13 +979,21 @@ export default function Messenger<R>({
     onLimit: () => finishVoiceRef.current?.(),
   });
 
-  const startVoice = async () => {
+  // Режим записи, как в VK: "hold" — держим кнопку (влево — отмена, вверх — закрепить),
+  // "locked" — запись закреплена (пауза, прослушать, отправить), "preview" — слушаем перед отправкой
+  const [voiceMode, setVoiceMode] = useState<"hold" | "locked" | null>(null);
+  const [slide, setSlide] = useState({ dx: 0, dy: 0 });
+  const [preview, setPreview] = useState<{ blob: Blob; url: string; duration: number; waveform: number[] } | null>(null);
+
+  const startVoice = async (): Promise<boolean> => {
     if (!voiceRecordingSupported()) {
       showSnackbar("Этот браузер не умеет записывать звук", "error");
-      return;
+      return false;
     }
     try {
       await recorder.start();
+      navigator.vibrate?.(15); // лёгкий отклик на Android, как в приложении VK
+      return true;
     } catch (err) {
       const e = err as DOMException;
       showSnackbar(
@@ -806,11 +1004,74 @@ export default function Messenger<R>({
             : `Не удалось включить микрофон: ${e.message}`,
         "error",
       );
+      return false;
     }
   };
 
-  const finishVoice = async () => {
+  // Нажали на микрофон: держим — запись с удержанием; короткое нажатие — запись закрепляется
+  const onMicDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0 || recorder.recording) return;
+    e.preventDefault();
+    const hold = { x: e.clientX, y: e.clientY, t: Date.now(), started: false, released: false, over: false };
+    setSlide({ dx: 0, dy: 0 });
+    setVoiceMode("hold");
+    const stopTracking = () => {
+      hold.over = true;
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+    };
+    const move = (ev: PointerEvent) => {
+      const dx = Math.min(0, ev.clientX - hold.x);
+      const dy = Math.min(0, ev.clientY - hold.y);
+      setSlide({ dx, dy });
+      if (dx < -100) {
+        // Сдвинули влево — отмена
+        stopTracking();
+        recorder.cancel();
+        setVoiceMode(null);
+      } else if (dy < -70) {
+        // Сдвинули вверх — запись закреплена, можно отпустить
+        stopTracking();
+        setVoiceMode("locked");
+      }
+    };
+    const up = () => {
+      stopTracking();
+      hold.released = true;
+      // Короткое нажатие или ждали разрешения на микрофон — запись без удержания
+      if (!hold.started || Date.now() - hold.t < 300) setVoiceMode("locked");
+      else finishVoice();
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+    startVoice().then((ok) => {
+      hold.started = ok;
+      if (!ok) {
+        stopTracking();
+        setVoiceMode(null);
+      }
+    });
+  };
+
+  const discardVoice = () => {
+    recorder.cancel();
+    setVoiceMode(null);
+    setPreview((p) => {
+      if (p) URL.revokeObjectURL(p.url);
+      return null;
+    });
+  };
+
+  // На паузе — «прослушать»: запись завершается, её можно послушать и отправить или удалить
+  const previewVoice = async () => {
     const result = await recorder.stop();
+    setVoiceMode(null);
+    if (result && result.blob.size) setPreview({ ...result, url: URL.createObjectURL(result.blob) });
+  };
+
+  const sendVoice = (result: { blob: Blob; duration: number; waveform: number[] } | null) => {
     if (!result || !active) return;
     if (result.duration < 0.7 || !result.blob.size) {
       showSnackbar(
@@ -829,11 +1090,33 @@ export default function Messenger<R>({
       waveform: result.waveform,
     });
   };
+
+  const finishVoice = async () => {
+    setVoiceMode(null);
+    if (preview) {
+      // Отправляем прослушанную запись
+      sendVoice(preview);
+      URL.revokeObjectURL(preview.url);
+      setPreview(null);
+      return;
+    }
+    sendVoice(await recorder.stop());
+  };
   finishVoiceRef.current = finishVoice;
 
   // Переключились на другой чат посреди записи — запись выбрасываем
   const { cancel: cancelVoice } = recorder;
-  useEffect(() => cancelVoice, [active?.id, cancelVoice]);
+  useEffect(
+    () => () => {
+      cancelVoice();
+      setVoiceMode(null);
+      setPreview((p) => {
+        if (p) URL.revokeObjectURL(p.url);
+        return null;
+      });
+    },
+    [active?.id, cancelVoice],
+  );
 
   // Освобождаем превью, когда окно закрывается
   useEffect(
@@ -1082,6 +1365,7 @@ export default function Messenger<R>({
                     onZoom={setZoomUrl}
                     onAskDelete={askDelete}
                     onRetry={retry}
+                    onListened={listenedCb}
                     highlight={search?.q && matchesQuery(m.text, search.q) ? search.q : ""}
                     current={m.id === search?.currentId}
                   />
@@ -1136,7 +1420,42 @@ export default function Messenger<R>({
                 "Вы не можете отправить сообщение этому пользователю, так как он ограничил круг лиц, которые могут присылать ему сообщения."
               )}
             </div>
-          ) : recorder.recording ? (
+          ) : preview ? (
+            /* Прослушать перед отправкой */
+            <div className="chat__composer chat__composer--recording">
+              <button type="button" className="icon-btn chat__send voice-rec__trash" title="Удалить запись" onClick={discardVoice}>
+                <TrashIcon size={22} />
+              </button>
+              <div className="voice-rec__preview">
+                <VoicePlayer url={preview.url} meta={preview} out />
+              </div>
+              <button type="button" className="icon-btn chat__send" title="Отправить голосовое" onClick={finishVoice}>
+                <SendIcon size={26} />
+              </button>
+            </div>
+          ) : voiceMode === "hold" ? (
+            /* Держим кнопку: влево — отмена, вверх — закрепить */
+            <div className="chat__composer chat__composer--recording voice-rec voice-rec--hold">
+              <div className="recording" role="status">
+                <span className="recording__dot" />
+                <span className="recording__time">{formatDuration(recorder.seconds)}</span>
+              </div>
+              <span className="voice-rec__cancel-hint" style={{ transform: `translateX(${slide.dx}px)`, opacity: 1 + slide.dx / 120 }}>
+                <ChevronLeftIcon size={18} /> Влево — отмена
+              </span>
+              <span className="voice-rec__lock" style={{ transform: `translateY(${Math.max(slide.dy, -60)}px)` }} title="Вверх — закрепить">
+                <LockIcon size={16} />
+                <ChevronUpIcon size={14} />
+              </span>
+              <span
+                className="voice-rec__mic"
+                style={{ transform: `translate(${slide.dx}px, ${slide.dy}px) scale(${1 + Math.min(recorder.levels.at(-1) ?? 0, 0.3)})` }}
+              >
+                <MicIcon size={26} />
+              </span>
+            </div>
+          ) : recorder.recording || voiceMode === "locked" ? (
+            /* Запись закреплена: удалить, пауза / продолжить, прослушать, отправить */
             <form
               className="chat__composer chat__composer--recording"
               onSubmit={(e) => {
@@ -1144,34 +1463,34 @@ export default function Messenger<R>({
                 finishVoice();
               }}
             >
+              <button type="button" className="icon-btn chat__send voice-rec__trash" title="Удалить запись" onClick={discardVoice}>
+                <TrashIcon size={22} />
+              </button>
+              <div className={`recording ${recorder.paused ? "recording--paused" : ""}`} role="status">
+                <span className="recording__dot" />
+                <span className="recording__time">{formatDuration(recorder.seconds)}</span>
+                {recorder.paused ? (
+                  <button type="button" className="voice-rec__listen" onClick={previewVoice}>
+                    <PlayIcon size={14} /> Прослушать
+                  </button>
+                ) : (
+                  <span className="recording__wave">
+                    {recorder.levels.map((l, i) => (
+                      <span key={i} style={{ height: `${Math.min(100, 12 + l * 400)}%` }} />
+                    ))}
+                  </span>
+                )}
+              </div>
               <button
                 type="button"
                 className="icon-btn chat__send"
-                title="Отменить запись"
-                style={{ color: "var(--like)" }}
-                onClick={recorder.cancel}
+                title={recorder.paused ? "Продолжить запись" : "Пауза"}
+                onClick={recorder.paused ? recorder.resume : recorder.pause}
+                disabled={!recorder.recording}
               >
-                <TrashIcon size={22} />
+                {recorder.paused ? <MicIcon size={22} /> : <PauseIcon size={22} />}
               </button>
-              <div className="recording" role="status">
-                <span className="recording__dot" />
-                <span className="recording__time">
-                  {formatDuration(recorder.seconds)}
-                </span>
-                <span className="recording__wave">
-                  {recorder.levels.map((l, i) => (
-                    <span
-                      key={i}
-                      style={{ height: `${Math.min(100, 12 + l * 400)}%` }}
-                    />
-                  ))}
-                </span>
-              </div>
-              <button
-                className="icon-btn chat__send"
-                title="Отправить голосовое"
-                autoFocus
-              >
+              <button className="icon-btn chat__send" title="Отправить голосовое" disabled={!recorder.recording}>
                 <SendIcon size={26} />
               </button>
             </form>
@@ -1255,10 +1574,18 @@ export default function Messenger<R>({
               ) : (
                 <button
                   type="button"
-                  className="icon-btn chat__send"
-                  title="Записать голосовое сообщение"
+                  className="icon-btn chat__send voice-rec__start"
+                  title="Голосовое: удерживайте, чтобы записать, или нажмите"
                   style={{ color: "var(--icon-secondary)" }}
-                  onClick={startVoice}
+                  onPointerDown={onMicDown}
+                  onContextMenu={(e) => e.preventDefault()}
+                  onKeyDown={(e) => {
+                    // С клавиатуры — запись без удержания
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      startVoice().then((ok) => ok && setVoiceMode("locked"));
+                    }
+                  }}
                 >
                   <MicIcon size={24} />
                 </button>
