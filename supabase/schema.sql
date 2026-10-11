@@ -2193,3 +2193,22 @@ create trigger photo_comments_mentions after insert or delete on public.photo_co
 drop trigger if exists video_comments_mentions on public.video_comments;
 create trigger video_comments_mentions after insert or delete on public.video_comments
   for each row execute function public.notify_comment_mentions();
+
+-- =========================================================
+-- Себе о своих действиях уведомлений не бывает: страховка на уровне таблицы
+-- и удаление уже созданных
+-- =========================================================
+create or replace function public.skip_self_notification() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if new.user_id = new.actor_id then return null; end if;
+  return new;
+end $$;
+
+revoke execute on function public.skip_self_notification() from public, anon, authenticated;
+
+drop trigger if exists notifications_skip_self on public.notifications;
+create trigger notifications_skip_self before insert on public.notifications
+  for each row execute function public.skip_self_notification();
+
+delete from public.notifications where user_id = actor_id;

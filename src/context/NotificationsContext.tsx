@@ -40,7 +40,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     api.fetchNotifications().then(
       (rows) => {
         if (cancelled) return;
-        setList(rows);
+        setList(rows.filter((n) => n.actor?.id !== myId));
         setStatus("ready");
       },
       (e) => {
@@ -74,7 +74,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
             return;
           }
           const fresh = await api.fetchNotification(id).catch(() => null);
-          if (!fresh || cancelled) return;
+          if (!fresh || cancelled || fresh.actor?.id === myId) return;
           setList((l) => [fresh, ...l.filter((n) => n.id !== fresh.id)]);
           if (!location.hash.startsWith("#notifications"))
             showSnackbar(summary(fresh), "info");
