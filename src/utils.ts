@@ -4,7 +4,6 @@ export const initials = (name: string) =>
 export const formatCount = (n: number): string =>
   n >= 1000 ? (n / 1000).toFixed(1).replace('.0', '') + 'K' : String(n);
 
-// plural(5, ['комментарий', 'комментария', 'комментариев']) → «комментариев»
 export const plural = (n: number, [one, few, many]: readonly [string, string, string]): string => {
   const m10 = n % 10;
   const m100 = n % 100;
@@ -13,11 +12,6 @@ export const plural = (n: number, [one, few, many]: readonly [string, string, st
   return many;
 };
 
-// Читает картинку из файла и ужимает её через canvas,
-// чтобы dataURL поместился в localStorage.
-// square: true — центрированная квадратная обрезка (для аватара)
-// data:-ссылка → файл. Без fetch(): политика безопасности сайта (CSP) запрещает запросы к data:,
-// и на опубликованном сайте загрузка фото из-за этого падала с «Нет связи с сервером»
 export const dataUrlToBlob = (dataUrl: string): Blob => {
   const [head, body = ''] = dataUrl.split(',');
   const type = head.match(/^data:([^;]+)/)?.[1] ?? 'application/octet-stream';
@@ -35,7 +29,6 @@ export const readImage = (
   { max = 800, square = false, quality = 0.85 }: { max?: number; square?: boolean; quality?: number } = {},
 ) =>
   new Promise<string>((resolve, reject) => {
-    // У некоторых файлов (особенно с телефона) тип пустой — тогда смотрим на расширение
     if (!file || !(file.type.startsWith('image/') || (!file.type && IMAGE_EXT.test(file.name)))) {
       reject(new Error('Выберите изображение в формате JPG, PNG или GIF'));
       return;
@@ -74,7 +67,6 @@ export const readImage = (
 
 const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
 
-// Дата как в VK: «сегодня в 14:32», «вчера в 9:05», «6 фев в 5:01», «6 фев 2024 в 5:01»
 type DateInput = string | number | Date;
 
 export const formatDate = (value: DateInput | null | undefined): string => {
@@ -96,11 +88,9 @@ const MONTHS_GENITIVE = ['января', 'февраля', 'марта', 'апр
 const daysAgo = (date: DateInput) =>
   Math.round((new Date().setHours(0, 0, 0, 0) - new Date(date).setHours(0, 0, 0, 0)) / 86_400_000);
 
-// Время сообщения: «14:05»
 export const formatTime = (value: DateInput) =>
   new Date(value).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
-// Разделитель в чате: «Сегодня», «Вчера», «3 октября», «3 октября 2025»
 export const formatDay = (value: DateInput): string => {
   const date = new Date(value);
   const diff = daysAgo(date);
@@ -110,7 +100,6 @@ export const formatDay = (value: DateInput): string => {
   return `${date.getDate()} ${MONTHS_GENITIVE[date.getMonth()]}${year}`;
 };
 
-// Время в списке чатов: сегодня — «14:05», вчера — «вчера», раньше — «3 окт»
 export const formatDialogTime = (value: DateInput | null | undefined): string => {
   if (!value) return '';
   const date = new Date(value);
@@ -120,9 +109,7 @@ export const formatDialogTime = (value: DateInput | null | undefined): string =>
   return `${date.getDate()} ${MONTHS_SHORT[date.getMonth()]}`;
 };
 
-// Текст пойманной ошибки (в catch у неё тип unknown)
 export const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
-// «был недавно» / «была недавно» — как в VK, когда человек не в сети
 export const lastSeen = (gender?: "male" | "female") =>
   gender === "female" ? "была недавно" : gender === "male" ? "был недавно" : "был(а) недавно";

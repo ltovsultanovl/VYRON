@@ -5,7 +5,6 @@ import { NAV_GROUPS, activeSection } from "./Sidebar";
 import { useScrollLock } from "../hooks";
 import type { Navigate } from "../types";
 
-// Шторка «Ещё» со всеми разделами — как меню в мобильном VK
 function MoreSheet({
   active,
   counters,
@@ -25,8 +24,16 @@ function MoreSheet({
   }, [onClose]);
 
   return (
-    <div className="sheet-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label="Все разделы">
+    <div
+      className="sheet-overlay"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        className="sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Все разделы"
+      >
         <div className="sheet__grip" />
         {NAV_GROUPS.map((items, i) => (
           <div key={i} className="sheet__group">
@@ -43,7 +50,9 @@ function MoreSheet({
               >
                 <Icon size={24} />
                 <span>{label}</span>
-                {!!view && counters[view] > 0 && <span className="counter">{counters[view]}</span>}
+                {!!view && counters[view] > 0 && (
+                  <span className="counter">{counters[view]}</span>
+                )}
               </button>
             ))}
           </div>
@@ -53,7 +62,6 @@ function MoreSheet({
   );
 }
 
-// Нижняя панель на телефоне: Лента, Друзья, Мессенджер, Профиль и «Ещё»
 export default function MobileNav({
   view,
   counters,
@@ -72,7 +80,6 @@ export default function MobileNav({
     { view: "profile", label: "Профиль", icon: <MeAvatar size={26} /> },
   ];
   const inMain = MAIN.some((m) => m.view === active);
-  // На «Ещё» — сумма счётчиков разделов, которых нет на панели (например, приглашения в сообщества)
   const moreCount = Object.entries(counters)
     .filter(([key]) => !MAIN.some((m) => m.view === key))
     .reduce((sum, [, n]) => sum + n, 0);
@@ -88,12 +95,17 @@ export default function MobileNav({
           >
             <span className="mobile-nav__icon">
               {m.icon}
-              {counters[m.view] > 0 && <span className="badge">{counters[m.view]}</span>}
+              {counters[m.view] > 0 && (
+                <span className="badge">{counters[m.view]}</span>
+              )}
             </span>
             {m.label}
           </button>
         ))}
-        <button className={`mobile-nav__item ${!inMain ? "active" : ""}`} onClick={() => setMoreOpen(true)}>
+        <button
+          className={`mobile-nav__item ${!inMain ? "active" : ""}`}
+          onClick={() => setMoreOpen(true)}
+        >
           <span className="mobile-nav__icon">
             <MoreIcon size={26} />
             {moreCount > 0 && <span className="badge">{moreCount}</span>}
@@ -102,7 +114,12 @@ export default function MobileNav({
         </button>
       </nav>
       {moreOpen && (
-        <MoreSheet active={active} counters={counters} onNavigate={onNavigate} onClose={() => setMoreOpen(false)} />
+        <MoreSheet
+          active={active}
+          counters={counters}
+          onNavigate={onNavigate}
+          onClose={() => setMoreOpen(false)}
+        />
       )}
     </>
   );

@@ -1,7 +1,8 @@
 import type { SVGProps } from "react";
 
-// Контурные иконки в стиле VK Icons (24×24, stroke 1.8)
-export type IconProps = Omit<SVGProps<SVGSVGElement>, "ref"> & { size?: number };
+export type IconProps = Omit<SVGProps<SVGSVGElement>, "ref"> & {
+  size?: number;
+};
 export type Icon = (props: IconProps) => React.JSX.Element;
 
 const Svg = ({ size = 24, children, ...rest }: IconProps) => (
@@ -21,11 +22,16 @@ const Svg = ({ size = 24, children, ...rest }: IconProps) => (
   </svg>
 );
 
-const Dot = ({ cx, cy, r = 1 }: { cx: string | number; cy: string | number; r?: number }) => (
-  <circle cx={cx} cy={cy} r={r} fill="currentColor" stroke="none" />
-);
+const Dot = ({
+  cx,
+  cy,
+  r = 1,
+}: {
+  cx: string | number;
+  cy: string | number;
+  r?: number;
+}) => <circle cx={cx} cy={cy} r={r} fill="currentColor" stroke="none" />;
 
-// ---------- Навигация ----------
 export const UserIcon = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="12" cy="8" r="4" />
@@ -92,60 +98,12 @@ export const VideoIcon = (p: IconProps) => (
   </Svg>
 );
 
-export const ClipsIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <rect x="5" y="3" width="14" height="18" rx="4" />
-    <path d="m10.5 9.5 4 2.5-4 2.5v-5Z" />
-  </Svg>
-);
-
-export const GamesIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M7 7h10a4 4 0 0 1 4 4v2a4 4 0 0 1-7 2.6h-4A4 4 0 0 1 3 13v-2a4 4 0 0 1 4-4Z" />
-    <path d="M8 10.5v3M6.5 12h3" />
-    <Dot cx="15.5" cy="11" />
-    <Dot cx="17" cy="13" />
-  </Svg>
-);
-
-export const MarketIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M5 8h14l-1 11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 8Z" />
-    <path d="M9 8a3 3 0 0 1 6 0" />
-  </Svg>
-);
-
-export const ServicesIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <rect x="4" y="4" width="7" height="7" rx="2" />
-    <rect x="13" y="4" width="7" height="7" rx="2" />
-    <rect x="4" y="13" width="7" height="7" rx="2" />
-    <rect x="13" y="13" width="7" height="7" rx="2" />
-  </Svg>
-);
-
 export const BookmarkIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M6 5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v15l-6-4-6 4V5Z" />
   </Svg>
 );
 
-export const FilesIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
-    <path d="M14 3v5h5" />
-  </Svg>
-);
-
-export const HelpIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <circle cx="12" cy="12" r="9" />
-    <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.4" />
-    <Dot cx="12" cy="16.8" />
-  </Svg>
-);
-
-// ---------- Шапка ----------
 export const SearchIcon = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="11" cy="11" r="6.5" />
@@ -191,8 +149,10 @@ export const LogoutIcon = (p: IconProps) => (
   </Svg>
 );
 
-// ---------- Пост ----------
-export const LikeIcon = ({ filled, ...p }: IconProps & { filled?: boolean }) => (
+export const LikeIcon = ({
+  filled,
+  ...p
+}: IconProps & { filled?: boolean }) => (
   <Svg {...p}>
     <path
       d="M12 20s-7.5-4.6-9-9.3C2 7.4 4.3 4.5 7.4 4.5c2 0 3.4 1.1 4.6 2.8 1.2-1.7 2.6-2.8 4.6-2.8 3.1 0 5.4 2.9 4.4 6.2C19.5 15.4 12 20 12 20Z"
@@ -209,13 +169,6 @@ export const ShareIcon = (p: IconProps) => (
   </Svg>
 );
 
-export const EyeIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
-    <circle cx="12" cy="12" r="3" />
-  </Svg>
-);
-
 export const MoreIcon = (p: IconProps) => (
   <Svg {...p}>
     <Dot cx="5" cy="12" r={1.7} />
@@ -224,7 +177,6 @@ export const MoreIcon = (p: IconProps) => (
   </Svg>
 );
 
-// ---------- Сообщения ----------
 export const AttachIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="m20 11.5-8 8a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4L15 7" />
@@ -275,7 +227,6 @@ export const InfoIcon = (p: IconProps) => (
   </Svg>
 );
 
-// ---------- Профиль ----------
 export const CloseIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M6 6l12 12M18 6 6 18" />
@@ -352,27 +303,11 @@ export const LinkIcon = (p: IconProps) => (
 
 export const HeartIcon = (p: IconProps) => <LikeIcon {...p} />;
 
-// ---------- Профиль ----------
-export const StatsIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M4 19h16" />
-    <path d="m5 15 5-5 3 3 6-6" />
-    <path d="M15 7h4v4" />
-  </Svg>
-);
-
 export const AlbumsIcon = (p: IconProps) => (
   <Svg {...p}>
     <rect x="3" y="7" width="15" height="13" rx="3" />
     <path d="M7 4h11a3 3 0 0 1 3 3v9" />
     <path d="m3 17 4-4 4 4 2-2 5 5" />
-  </Svg>
-);
-
-export const SparkleIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M10 3.5 11.6 8a3 3 0 0 0 1.9 1.9L18 11.5l-4.5 1.6a3 3 0 0 0-1.9 1.9L10 19.5 8.4 15a3 3 0 0 0-1.9-1.9L2 11.5l4.5-1.6A3 3 0 0 0 8.4 8L10 3.5Z" />
-    <path d="M18.5 2.5v4M16.5 4.5h4" />
   </Svg>
 );
 
@@ -382,42 +317,10 @@ export const ChevronRightIcon = (p: IconProps) => (
   </Svg>
 );
 
-// ---------- Левое меню: дополнительные разделы ----------
-export const VoicesIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <ellipse cx="12" cy="6.5" rx="7" ry="3" />
-    <path d="M5 6.5v5c0 1.66 3.13 3 7 3s7-1.34 7-3v-5" />
-    <path d="M5 11.5v5c0 1.66 3.13 3 7 3s7-1.34 7-3v-5" />
-  </Svg>
-);
-
-export const AdsIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M4 10v4a1 1 0 0 0 1 1h3l7 4V5L8 9H5a1 1 0 0 0-1 1Z" />
-    <path d="M8 15v4M18.5 9.5a3.5 3.5 0 0 1 0 5" />
-  </Svg>
-);
-
-// Цветная иконка браузера — не наследует цвет меню
-export const BrowserIcon = ({ size = 24 }: IconProps) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-    <circle cx="12" cy="12" r="10" fill="#fc3f1d" />
-    <circle cx="12" cy="12" r="8" fill="#fff" />
-    <path d="M12.6 17h1.6V7h-2.3c-2.3 0-3.5 1.2-3.5 2.9 0 1.4.7 2.3 2 3.2L8 17h1.8l2.6-3.6-.9-.6c-1.1-.7-1.6-1.3-1.6-2.5 0-1 .7-1.8 2-1.8h.7V17Z" fill="#fc3f1d" />
-  </svg>
-);
-
-// ---------- Пост ----------
 export const PinIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M9 4h6l-1 5 3 3v2H7v-2l3-3-1-5Z" />
     <path d="M12 14v6" />
-  </Svg>
-);
-
-export const FlagIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
   </Svg>
 );
 
@@ -433,21 +336,12 @@ export const DownloadIcon = (p: IconProps) => (
   </Svg>
 );
 
-export const TagUserIcon = (p: IconProps) => (
-  <Svg {...p}>
-    <circle cx="12" cy="9" r="3.5" />
-    <path d="M5.5 19c.8-2.9 3.4-4.5 6.5-4.5s5.7 1.6 6.5 4.5" />
-    <rect x="3" y="3" width="18" height="18" rx="5" />
-  </Svg>
-);
-
 export const PauseIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M8 5.5v13M16 5.5v13" strokeWidth="3" />
   </Svg>
 );
 
-// Видеокамера — пункт «Видео» в меню вложений
 export const CamcorderIcon = (p: IconProps) => (
   <Svg {...p}>
     <rect x="3" y="6" width="13" height="12" rx="3" />
@@ -498,14 +392,22 @@ export const ImageCoverIcon = (p: IconProps) => (
 export const PrevIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M6 5v14" />
-    <path d="M18.5 5.8v12.4a.8.8 0 0 1-1.2.7L8.6 12.7a.8.8 0 0 1 0-1.4l8.7-6.2a.8.8 0 0 1 1.2.7Z" fill="currentColor" stroke="none" />
+    <path
+      d="M18.5 5.8v12.4a.8.8 0 0 1-1.2.7L8.6 12.7a.8.8 0 0 1 0-1.4l8.7-6.2a.8.8 0 0 1 1.2.7Z"
+      fill="currentColor"
+      stroke="none"
+    />
   </Svg>
 );
 
 export const NextIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M18 5v14" />
-    <path d="M5.5 5.8v12.4a.8.8 0 0 0 1.2.7l8.7-6.2a.8.8 0 0 0 0-1.4L6.7 5.1a.8.8 0 0 0-1.2.7Z" fill="currentColor" stroke="none" />
+    <path
+      d="M5.5 5.8v12.4a.8.8 0 0 0 1.2.7l8.7-6.2a.8.8 0 0 0 0-1.4L6.7 5.1a.8.8 0 0 0-1.2.7Z"
+      fill="currentColor"
+      stroke="none"
+    />
   </Svg>
 );
 
@@ -522,10 +424,17 @@ export const RepeatIcon = ({ one, ...p }: IconProps & { one?: boolean }) => (
   </Svg>
 );
 
-export const VolumeIcon = ({ muted, ...p }: IconProps & { muted?: boolean }) => (
+export const VolumeIcon = ({
+  muted,
+  ...p
+}: IconProps & { muted?: boolean }) => (
   <Svg {...p}>
     <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4Z" />
-    {muted ? <path d="m16 9.5 5 5M21 9.5l-5 5" /> : <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />}
+    {muted ? (
+      <path d="m16 9.5 5 5M21 9.5l-5 5" />
+    ) : (
+      <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
+    )}
   </Svg>
 );
 
@@ -571,6 +480,9 @@ export const BlockIcon = (p: IconProps) => (
 
 export const BookmarkFilledIcon = (p: IconProps) => (
   <Svg {...p}>
-    <path d="M6 5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v15l-6-4-6 4V5Z" fill="currentColor" />
+    <path
+      d="M6 5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v15l-6-4-6 4V5Z"
+      fill="currentColor"
+    />
   </Svg>
 );

@@ -6,7 +6,6 @@ import type { AlbumPrivacy } from "../../types";
 export const photosWord = (n: number) =>
   plural(n, ["фотография", "фотографии", "фотографий"]);
 
-// Плитка альбома как в VK: обложка, внизу название и число фото
 export default function AlbumCard({
   title,
   count,

@@ -4,9 +4,8 @@ import { useSnackbar } from "../components/Snackbar";
 import { PasswordInput } from "./AuthPage";
 import { explainError, setNewPassword } from "../api";
 
-const MIN_PASSWORD = 8; // как в настройках Supabase (Authentication → Password)
+const MIN_PASSWORD = 8;
 
-// Открыта ссылка «Восстановить пароль» — просим задать новый
 export default function NewPassword({ onDone }: { onDone: () => void }) {
   const showSnackbar = useSnackbar();
   const [password, setPassword] = useState("");

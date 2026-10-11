@@ -17,9 +17,15 @@ const TITLES: Record<SharedType, string> = {
   video: "видео",
 };
 
-// «Поделиться»: выбрать одного или нескольких собеседников, добавить комментарий и отправить.
-// shared — { type: post | photo | profile, id }; link — адрес для «Скопировать ссылку» (#user/…)
-export default function ShareModal({ shared, link, onClose }: { shared: Shared; link: string; onClose: () => void }) {
+export default function ShareModal({
+  shared,
+  link,
+  onClose,
+}: {
+  shared: Shared;
+  link: string;
+  onClose: () => void;
+}) {
   const { dialogs, sendMessage } = useChat();
   const showSnackbar = useSnackbar();
   const [query, setQuery] = useState("");
@@ -41,16 +47,25 @@ export default function ShareModal({ shared, link, onClose }: { shared: Shared; 
 
   const send = async () => {
     setSending(true);
-    // Ошибку конкретного сообщения покажет сам чат («Не отправлено. Повторить»)
-    await Promise.all([...selected].map((id) => sendMessage(id, { text: comment.trim(), shared })));
+    await Promise.all(
+      [...selected].map((id) =>
+        sendMessage(id, { text: comment.trim(), shared }),
+      ),
+    );
     const n = selected.size;
-    showSnackbar(n > 1 ? `Отправлено ${n} ${plural(n, ["получателю", "получателям", "получателям"])}` : "Отправлено");
+    showSnackbar(
+      n > 1
+        ? `Отправлено ${n} ${plural(n, ["получателю", "получателям", "получателям"])}`
+        : "Отправлено",
+    );
     onClose();
   };
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(`${location.origin}${location.pathname}${link}`);
+      await navigator.clipboard.writeText(
+        `${location.origin}${location.pathname}${link}`,
+      );
       showSnackbar("Ссылка скопирована");
     } catch {
       showSnackbar("Не удалось скопировать ссылку", "error");
@@ -65,12 +80,23 @@ export default function ShareModal({ shared, link, onClose }: { shared: Shared; 
       footer={
         <>
           {link && (
-            <button className="btn btn--tertiary share__copy" onClick={copyLink}>
+            <button
+              className="btn btn--tertiary share__copy"
+              onClick={copyLink}
+            >
               <LinkIcon size={18} /> Скопировать ссылку
             </button>
           )}
-          <button className="btn" onClick={send} disabled={!selected.size || sending}>
-            {sending ? "Отправляем…" : selected.size > 1 ? `Отправить (${selected.size})` : "Отправить"}
+          <button
+            className="btn"
+            onClick={send}
+            disabled={!selected.size || sending}
+          >
+            {sending
+              ? "Отправляем…"
+              : selected.size > 1
+                ? `Отправить (${selected.size})`
+                : "Отправить"}
           </button>
         </>
       }
@@ -88,16 +114,31 @@ export default function ShareModal({ shared, link, onClose }: { shared: Shared; 
 
       <div className="share__list">
         {people.map((p) => (
-          <label key={p.id} className={`share__person ${selected.has(p.id) ? "share__person--on" : ""}`}>
-            <Avatar name={p.name} color={p.color} src={p.avatar} size={40} online={p.online} />
+          <label
+            key={p.id}
+            className={`share__person ${selected.has(p.id) ? "share__person--on" : ""}`}
+          >
+            <Avatar
+              name={p.name}
+              color={p.color}
+              src={p.avatar}
+              size={40}
+              online={p.online}
+            />
             <span className="share__name">{p.name}</span>
-            <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggle(p.id)} />
+            <input
+              type="checkbox"
+              checked={selected.has(p.id)}
+              onChange={() => toggle(p.id)}
+            />
             <span className="share__check" aria-hidden="true" />
           </label>
         ))}
         {!people.length && (
           <div className="empty empty--compact">
-            {dialogs.length ? "Никого не нашлось" : "Здесь появятся друзья и ваши чаты — пока отправить некому"}
+            {dialogs.length
+              ? "Никого не нашлось"
+              : "Здесь появятся друзья и ваши чаты — пока отправить некому"}
           </div>
         )}
       </div>

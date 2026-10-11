@@ -1,17 +1,15 @@
 import type { AppNotification, Gender, NotificationType } from "../../types";
 import { plural } from "../../utils";
 
-// Группа одинаковых уведомлений: «Анна и ещё 2 человека оценили вашу запись»
 export interface NotificationGroup {
   key: string;
   type: NotificationType;
-  items: AppNotification[]; // от новых к старым
+  items: AppNotification[];
   latest: AppNotification;
 }
 
 const LIKES: NotificationType[] = ["post_like", "photo_like", "video_like"];
 
-// Лайки одного и того же объекта собираем в одну строку, остальное — по одному
 export function groupNotifications(list: AppNotification[]): NotificationGroup[] {
   const groups = new Map<string, NotificationGroup>();
   for (const n of list) {
@@ -24,7 +22,6 @@ export function groupNotifications(list: AppNotification[]): NotificationGroup[]
   return [...groups.values()];
 }
 
-// Глагол по полу: «оценил» / «оценила»; во множественном числе — «оценили»
 const verb = (gender: Gender | undefined, many: boolean, [male, female, plural_]: [string, string, string]) =>
   many ? plural_ : gender === "female" ? female : male;
 
@@ -54,7 +51,6 @@ const WHAT: Partial<Record<NotificationType, string>> = {
   video_comment: "ваше видео",
 };
 
-// Текст после имени: «оценила вашу запись», «и ещё 2 человека оценили вашу фотографию»
 export function describe(group: NotificationGroup): { others: string; action: string } {
   const { type, items, latest } = group;
   const many = items.length > 1;
@@ -87,14 +83,12 @@ export function describe(group: NotificationGroup): { others: string; action: st
   }
 }
 
-// Короткий текст для всплывашки о новом уведомлении
 export function summary(n: AppNotification): string {
   const { action } = describe({ key: "", type: n.type, items: [n], latest: n });
   if (n.type === "community_accepted" || n.type === "post_approved") return action;
   return `${n.actor?.name ?? "Кто-то"} ${action}`;
 }
 
-// Куда ведёт клик по уведомлению
 export function target(n: AppNotification, myId: string): string {
   if (n.post) {
     if (n.post.communityId) return `#club/${n.post.communityId}`;
@@ -107,7 +101,6 @@ export function target(n: AppNotification, myId: string): string {
   return "#notifications";
 }
 
-// Фильтры страницы уведомлений
 export type NotificationFilter = "all" | "replies" | "likes" | "friends" | "communities";
 
 export const FILTERS: Record<NotificationFilter, (t: NotificationType) => boolean> = {

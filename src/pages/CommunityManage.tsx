@@ -36,14 +36,12 @@ interface ManageSection {
 }
 
 
-// ---------- Основное: информация, оформление, доступ ----------
 function InfoSection({ community, onSaved }: { community: Community; onSaved: (community: Community) => void }) {
   const { myId } = useProfile();
   const showSnackbar = useSnackbar();
   const [draft, setDraft] = useState(community);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"avatar" | "cover" | null>(null);
-  // Поле формы → черновик: у галочек — checked, у остальных — value
   const set =
     (key: keyof Community) =>
     (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -300,7 +298,6 @@ function InfoSection({ community, onSaved }: { community: Community; onSaved: (c
   );
 }
 
-// ---------- Участники, заявки, приглашения ----------
 function MembersSection({
   community,
   myRole,
@@ -331,7 +328,6 @@ function MembersSection({
     list.reload();
   };
 
-  // Какие роли я могу дать этому человеку (как в VK: админов назначает только владелец)
   const rolesFor = (role: CommunityRole): CommunityRole[] => {
     if (role === "owner") return [];
     if (myRole === "owner") return ["admin", "editor", "member"];
@@ -499,7 +495,6 @@ function MembersSection({
   );
 }
 
-// ---------- Страница управления ----------
 export default function CommunityManage({
   id,
   section,
@@ -540,7 +535,6 @@ export default function CommunityManage({
     );
   }
 
-  // Редактор видит только сообщения; остальное — владелец и админы
   const SECTIONS = ([
     isManager && { id: "info", label: "Основное" },
     isManager && {

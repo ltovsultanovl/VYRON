@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Friendship, FriendStatus, Person } from "../types";
 import { supabase } from "../lib/supabase";
 import {
@@ -30,8 +38,6 @@ interface FriendsValue {
 
 const FriendsContext = createContext<FriendsValue | null>(null);
 
-// Мои друзья и заявки. Обновляются в реальном времени: заявка от другого
-// человека появляется без перезагрузки
 export function FriendsProvider({ children }: { children: ReactNode }) {
   const { myId } = useProfile();
   const showSnackbar = useSnackbar();
@@ -53,14 +59,17 @@ export function FriendsProvider({ children }: { children: ReactNode }) {
     reload();
     const channel = supabase
       .channel("friendships")
-      .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, reload)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "friendships" },
+        reload,
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   }, [reload]);
 
-  // Действие с заявкой: запрос → перечитываем список; ошибка — в уведомление
   const run = useCallback(
     async (action: () => Promise<unknown>, success?: string) => {
       try {
@@ -78,7 +87,8 @@ export function FriendsProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<FriendsValue>(() => {
-    const byStatus = (s: FriendStatus) => links.filter((l) => l.status === s).map((l) => l.person);
+    const byStatus = (s: FriendStatus) =>
+      links.filter((l) => l.status === s).map((l) => l.person);
     const statusById = new Map(links.map((l) => [l.person.id, l.status]));
     return {
       status,
@@ -87,21 +97,34 @@ export function FriendsProvider({ children }: { children: ReactNode }) {
       friends: byStatus("friend"),
       incoming: byStatus("incoming"),
       outgoing: byStatus("outgoing"),
-      // friend | incoming | outgoing | none
       relationTo: (userId: string) => statusById.get(userId) ?? "none",
-      sendRequest: (person) => run(() => sendFriendRequest(person.id), "Заявка отправлена"),
-      accept: (person) => run(() => acceptFriendRequest(myId, person.id), `${person.firstName} теперь у вас в друзьях`),
-      decline: (person) => run(() => removeFriendship(myId, person.id), "Заявка отклонена"),
-      cancel: (person) => run(() => removeFriendship(myId, person.id), "Заявка отменена"),
-      remove: (person) => run(() => removeFriendship(myId, person.id), `${person.firstName} удалён(а) из друзей`),
+      sendRequest: (person) =>
+        run(() => sendFriendRequest(person.id), "Заявка отправлена"),
+      accept: (person) =>
+        run(
+          () => acceptFriendRequest(myId, person.id),
+          `${person.firstName} теперь у вас в друзьях`,
+        ),
+      decline: (person) =>
+        run(() => removeFriendship(myId, person.id), "Заявка отклонена"),
+      cancel: (person) =>
+        run(() => removeFriendship(myId, person.id), "Заявка отменена"),
+      remove: (person) =>
+        run(
+          () => removeFriendship(myId, person.id),
+          `${person.firstName} удалён(а) из друзей`,
+        ),
     };
   }, [links, status, error, reload, run, myId]);
 
-  return <FriendsContext.Provider value={value}>{children}</FriendsContext.Provider>;
+  return (
+    <FriendsContext.Provider value={value}>{children}</FriendsContext.Provider>
+  );
 }
 
 export function useFriends() {
   const context = useContext(FriendsContext);
-  if (!context) throw new Error("useFriends нужно вызывать внутри <FriendsProvider>");
+  if (!context)
+    throw new Error("useFriends нужно вызывать внутри <FriendsProvider>");
   return context;
 }

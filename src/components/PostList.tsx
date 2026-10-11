@@ -3,13 +3,25 @@ import type { ReactNode } from "react";
 import type { PostsFeed } from "../resources";
 import type { Post as PostType } from "../types";
 
-// Список записей из usePosts: загрузка, ошибка с «Повторить», пусто, записи
 export default function PostList({
   feed,
   emptyText,
   emptyAction,
 }: {
-  feed: Pick<PostsFeed, "posts" | "data" | "loading" | "error" | "reload" | "toggleLike" | "comment" | "deleteComment" | "remove" | "togglePin" | "approve">;
+  feed: Pick<
+    PostsFeed,
+    | "posts"
+    | "data"
+    | "loading"
+    | "error"
+    | "reload"
+    | "toggleLike"
+    | "comment"
+    | "deleteComment"
+    | "remove"
+    | "togglePin"
+    | "approve"
+  >;
   emptyText: ReactNode;
   emptyAction?: ReactNode;
 }) {

@@ -1,4 +1,3 @@
-// Справочники и форматтеры для профиля
 import type { Education, Gender, Interests } from "./types";
 
 export const MONTHS = [
@@ -17,7 +16,6 @@ export const relationOptions = (gender: Gender) =>
 export const relationLabel = (gender: Gender, value: string) =>
   value && value !== '0' ? (RELATIONS[gender] ?? RELATIONS.male)[+value] : '';
 
-// Поля «Интересов»: порядок и подписи — для формы редактирования и окна «Подробнее»
 export const INTERESTS: [keyof Interests, string][] = [
   ['activities', 'Деятельность'],
   ['interests', 'Интересы'],
@@ -48,7 +46,6 @@ export const formatBirthday = (p: {
 export const formatEducation = (e: Education) =>
   e.university ? `${e.university}${e.graduation ? ` '${e.graduation.slice(-2)}` : ''}` : '';
 
-// Имя/фамилия: только буквы (кириллица/латиница), дефис и пробел
 export const validateName = (value: string, what: string) => {
   const v = value.trim();
   if (!v) return `Укажите ${what}`;

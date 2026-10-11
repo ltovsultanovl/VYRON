@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import type { Icon as IconType } from "../Icons";
 
-// Заглушка пустой вкладки: иконка + текст
 export default function MediaEmpty({
   Icon,
   children,

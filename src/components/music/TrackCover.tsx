@@ -2,7 +2,6 @@ import { MusicIcon, PauseIcon, PlayIcon } from "../Icons";
 import { coverGradient } from "./format";
 import type { Track } from "../../types";
 
-// Обложка трека: при наведении — ▶, у играющего — «эквалайзер» или ⏸
 export default function TrackCover({
   track,
   size = 40,

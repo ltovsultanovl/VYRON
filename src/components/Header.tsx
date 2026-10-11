@@ -1,7 +1,13 @@
 import Logo from "./Logo";
 import { useState } from "react";
 import MeAvatar from "./MeAvatar";
-import { ChevronDownIcon, BlockIcon, LogoutIcon, MoonIcon, SearchIcon } from "./Icons";
+import {
+  ChevronDownIcon,
+  BlockIcon,
+  LogoutIcon,
+  MoonIcon,
+  SearchIcon,
+} from "./Icons";
 import NotificationsBell from "./notifications/NotificationsBell";
 import HeaderPlayer from "./music/HeaderPlayer";
 import { useSnackbar } from "./Snackbar";
@@ -48,12 +54,20 @@ export default function Header({
   return (
     <header className="header">
       <div className="header__inner">
-        <a className="logo" href="#feed" onClick={go("feed")} aria-label="VYRON — на главную">
+        <a
+          className="logo"
+          href="#feed"
+          onClick={go("feed")}
+          aria-label="VYRON — на главную"
+        >
           <Logo />
         </a>
 
-        {/* На узком телефоне поле не помещается — значок ведёт на страницу поиска людей */}
-        <button className="icon-btn header__search-btn" title="Поиск" onClick={() => onNavigate("friends/search")}>
+        <button
+          className="icon-btn header__search-btn"
+          title="Поиск"
+          onClick={() => onNavigate("friends/search")}
+        >
           <SearchIcon size={24} />
         </button>
         <form className="search" role="search" onSubmit={search}>
@@ -72,7 +86,6 @@ export default function Header({
 
         <div className="header__spacer" />
 
-        {/* Колокольчик — справа, рядом с аватаром */}
         <NotificationsBell onNavigate={onNavigate} />
 
         <div className="profile-menu" ref={menu.ref}>
@@ -83,7 +96,11 @@ export default function Header({
 
           {menu.open && (
             <div className="dropdown">
-              <a href="#profile" className="dropdown__head" onClick={go("profile")}>
+              <a
+                href="#profile"
+                className="dropdown__head"
+                onClick={go("profile")}
+              >
                 <MeAvatar size={48} />
                 <div>
                   <div className="dropdown__name">{name}</div>
@@ -93,9 +110,15 @@ export default function Header({
               <div className="separator" />
               <button className="dropdown__item" onClick={onToggleTheme}>
                 <MoonIcon /> Тема
-                <span className="muted">{theme === "dark" ? "Тёмная" : "Светлая"}</span>
+                <span className="muted">
+                  {theme === "dark" ? "Тёмная" : "Светлая"}
+                </span>
               </button>
-              <a href="#blacklist" className="dropdown__item" onClick={go("blacklist")}>
+              <a
+                href="#blacklist"
+                className="dropdown__item"
+                onClick={go("blacklist")}
+              >
                 <BlockIcon /> Чёрный список
               </a>
               <div className="separator" />

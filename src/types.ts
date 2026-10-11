@@ -1,7 +1,3 @@
-// Типы данных приложения — то, с чем работают компоненты (после перевода из колонок базы в api.ts)
-
-// ---------- Люди ----------
-
 export type Gender = "male" | "female";
 export type BirthVisibility = "show" | "month" | "hide";
 
@@ -39,7 +35,6 @@ export interface Career {
   to: string;
 }
 
-// Поля «Редактировать профиль» (в базе — profiles.info)
 export interface ProfileInfo {
   gender: Gender;
   relation: string;
@@ -55,7 +50,6 @@ export interface ProfileInfo {
   career: Career;
 }
 
-// Полный профиль — страница пользователя и редактирование
 export interface Profile extends ProfileInfo {
   id: string;
   firstName: string;
@@ -67,7 +61,6 @@ export interface Profile extends ProfileInfo {
   createdAt: string;
 }
 
-// Кратко о человеке — аватары, списки, авторы постов
 export interface Person {
   id: string;
   firstName: string;
@@ -76,20 +69,17 @@ export interface Person {
   color: string;
   avatar: string | null;
   city: string;
-  gender?: Gender; // для «оценил / оценила» в уведомлениях
+  gender?: Gender;
   online?: boolean;
 }
 
 export type FriendStatus = "friend" | "outgoing" | "incoming";
-export type Relation = FriendStatus | "none" | "me";
 
 export interface Friendship {
   person: Person;
   status: FriendStatus;
   createdAt: string;
 }
-
-// ---------- Сообщества ----------
 
 export type CommunityKind = "group" | "page";
 export type CommunityAccess = "open" | "closed" | "private";
@@ -125,7 +115,6 @@ export interface Membership {
   status: MemberStatus;
 }
 
-// Страница сообщества: само сообщество, моё место в нём и число участников
 export interface CommunityDetails extends Community {
   membership: Membership | null;
   membersCount: number | null;
@@ -144,9 +133,8 @@ export interface CommunityMember {
   since: string;
 }
 
-// Строка community_messages (+ сообщество или собеседник, если подгружены)
 export interface CommunityMessageRow {
-  id: number | string; // временные (ещё не отправленные) — строка tmp-…
+  id: number | string;
   community_id: number;
   user_id: string;
   author_id?: string;
@@ -159,8 +147,6 @@ export interface CommunityMessageRow {
   pending?: boolean;
   failed?: boolean;
 }
-
-// ---------- Посты, комментарии ----------
 
 export interface Comment {
   id: number;
@@ -187,8 +173,6 @@ export interface Post {
   comments: Comment[];
 }
 
-// ---------- Фото ----------
-
 export interface Photo {
   id: number;
   src: string;
@@ -199,10 +183,9 @@ export interface Photo {
   likes: number;
   liked: boolean;
   comments: Comment[];
-  readOnly?: boolean; // старый аватар без записи в «Фото»
+  readOnly?: boolean;
 }
 
-// Фото для карточки «Поделиться»
 export interface SharedPhoto {
   id: number;
   src: string;
@@ -221,8 +204,6 @@ export interface Album {
   coverPhotoId: number | null;
   createdAt: string;
 }
-
-// ---------- Музыка ----------
 
 export interface Track {
   id: number;
@@ -247,8 +228,6 @@ export interface Playlist {
   tracks: Track[];
 }
 
-// ---------- Видео ----------
-
 export interface Video {
   id: number;
   ownerId: string;
@@ -269,8 +248,6 @@ export interface Video {
   commentsCount: number;
 }
 
-// ---------- Сообщения ----------
-
 export type AttachmentType = "image" | "video" | "audio" | "voice";
 export type SharedType = "post" | "photo" | "profile" | "community" | "audio" | "playlist" | "video";
 
@@ -279,13 +256,11 @@ export interface Shared {
   id: string | number;
 }
 
-// Голосовое: длительность и волна для отрисовки
 export interface VoiceMeta {
   duration?: number;
   waveform?: number[];
 }
 
-// Строка messages в том виде, как её хранит чат (+ поля временного сообщения)
 export interface MessageRow {
   id: number | string;
   sender_id: string;
@@ -301,8 +276,7 @@ export interface MessageRow {
   shared_id?: string | null;
   hidden_by_sender?: boolean;
   hidden_by_recipient?: boolean;
-  listened_at?: string | null; // голосовое прослушано получателем
-  // Только на клиенте
+  listened_at?: string | null;
   pending?: boolean;
   failed?: boolean;
   localUrl?: string | null;
@@ -310,13 +284,6 @@ export interface MessageRow {
   community_id?: number;
 }
 
-export interface VoiceRecording {
-  blob: Blob;
-  duration: number;
-  waveform: number[];
-}
-
-// Собеседник в мессенджере: человек или сообщество (тогда id — "club:<id>")
 export interface ChatPeer {
   id: string;
   name: string;
@@ -324,7 +291,7 @@ export interface ChatPeer {
   color: string;
   avatar: string | null;
   online: boolean;
-  gender?: Gender; // «был» / «была» недавно
+  gender?: Gender;
   isCommunity?: boolean;
   communityId?: number;
 }
@@ -348,8 +315,6 @@ export interface SendOptions {
   shared?: Shared | null;
 }
 
-// ---------- Уведомления ----------
-
 export type NotificationType =
   | "post_like"
   | "post_comment"
@@ -363,13 +328,13 @@ export type NotificationType =
   | "friend_accepted"
   | "community_invite"
   | "community_accepted"
-  | "mention" // отметили в комментарии
-  | "comment_reply"; // ответили на ваш комментарий
+  | "mention"
+  | "comment_reply";
 
 export interface AppNotification {
   id: number;
   type: NotificationType;
-  text: string; // начало комментария или записи
+  text: string;
   createdAt: string;
   readAt: string | null;
   actor: Person | null;
@@ -379,16 +344,4 @@ export interface AppNotification {
   community: CommunityBrief | null;
 }
 
-// ---------- Общее ----------
-
-// Состояние загрузки «по просьбе» (useResource)
-export interface ResourceState<T> {
-  data: T | null;
-  loading: boolean;
-  error: string;
-}
-
-export type SnackbarKind = "info" | "error";
-
-// Переход по разделам: onNavigate("friends/requests") → #friends/requests
 export type Navigate = (path: string) => void;

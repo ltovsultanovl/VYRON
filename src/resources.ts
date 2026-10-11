@@ -1,5 +1,3 @@
-// Загрузка данных с сервера для страниц: loading / error / пусто — и действия
-// с оптимистичным обновлением (интерфейс меняется сразу, при ошибке — откат)
 import { useCallback, useEffect, useMemo, useState, type DependencyList } from "react";
 import * as api from "./api";
 import type { Album, Comment, Person, Photo, Post } from "./types";
@@ -13,14 +11,11 @@ export interface Resource<T> {
   data: T | null;
   loading: boolean;
   error: string;
-  // Заменить данные (в том числе пока они ещё не загрузились)
   setData: (fn: (data: T | null) => T | null) => void;
-  // Изменить уже загруженные данные; пока их нет — ничего не делает
   update: (fn: (data: T) => T) => void;
   reload: () => void;
 }
 
-// Универсальная загрузка: { data, setData, update, loading, error, reload }
 export function useResource<T>(load: () => Promise<T>, deps: DependencyList): Resource<T> {
   const [state, setState] = useState<{ data: T | null; loading: boolean; error: string }>({
     data: null,
@@ -49,21 +44,15 @@ export function useResource<T>(load: () => Promise<T>, deps: DependencyList): Re
   return { ...state, setData, update, reload };
 }
 
-// Профиль любого пользователя (своя страница берёт данные из ProfileContext)
 export const useUserProfile = (userId: string | null | undefined) =>
   useResource(() => (userId ? api.fetchProfile(userId) : Promise.resolve(null)), [userId]);
 
-// Друзья любого пользователя — для блока «Друзья» на его странице
 export const useFriendsOf = (userId: string | null | undefined) =>
   useResource<Person[]>(async () => {
     if (!userId) return [];
     return (await api.fetchFriendships(userId)).filter((l) => l.status === "friend").map((l) => l.person);
   }, [userId]);
 
-// ---------- Посты: стена, лента, понравившиеся ----------
-
-// source: { wall: userId } | { feed: ownerIds | null, communities?: ids } | { liked: true }
-//       | { community: id, suggested?: true } — стена сообщества или предложенные новости
 export type PostSource =
   | { wall: string }
   | { community: number; suggested?: boolean }
@@ -110,10 +99,8 @@ export function usePosts(source: PostSource) {
     [showSnackbar, reload],
   );
 
-  // Действия постоянные (useMemo) — мемоизированные посты не перерисовываются от каждого рендера списка
   const actions = useMemo(
     () => ({
-    // На стену человека (ownerId) или сообщества (communityId, asCommunity, suggested)
     publish: async ({ ownerId, communityId, asCommunity, suggested, text, imageDataUrl }: PublishData) => {
       try {
         const image = imageDataUrl ? await api.uploadImage(myId, imageDataUrl, "posts") : null;
@@ -126,7 +113,6 @@ export function usePosts(source: PostSource) {
           imageUrl: image?.url,
           myId,
         });
-        // Предложенная новость не появляется на общей стене — только в «Предложенных»
         if (suggested && !forSuggested) {
           showSnackbar("Новость предложена — её опубликуют после проверки руководители сообщества");
           return true;
@@ -184,7 +170,6 @@ export function usePosts(source: PostSource) {
       }
     },
 
-    // Опубликовать предложенную новость от имени сообщества. true — опубликовали
     approve: async (post: Post) => {
       update((list) => list.filter((p) => p.id !== post.id));
       try {
@@ -212,10 +197,6 @@ export function usePosts(source: PostSource) {
   return { ...resource, posts: resource.data ?? [], ...actions };
 }
 
-// ---------- Фото пользователя ----------
-
-// Фото человека или сообщества: usePhotos(userId) / usePhotos(null, { communityId }).
-// albumId — только один альбом (0 — «Фотографии с моей страницы»)
 export function usePhotos(ownerId: string | null, { communityId, albumId, bookmarked }: api.PhotoSource = {}) {
   const { myId, profile, updateProfile } = useProfile();
   const showSnackbar = useSnackbar();
@@ -230,8 +211,6 @@ export function usePhotos(ownerId: string | null, { communityId, albumId, bookma
     [update],
   );
 
-  // Загружаем по 3 файла одновременно — так быстрее, чем по одному, и не забиваем
-  // связь на телефоне. Каждый файл сам по себе: битый не отменяет остальные. target — в какой альбом
   const upload = async (files: File[], { albumId: target = albumId }: { albumId?: number } = {}) => {
     let added = 0;
     let lastError: unknown = null;
@@ -252,14 +231,12 @@ export function usePhotos(ownerId: string | null, { communityId, albumId, bookma
     return { added, failed: files.length - added, error: lastError ? api.explainError(lastError) : "" };
   };
 
-  // Только что загруженное фото (например, новый аватар) — сразу в начало альбома
   const addLocal = (photo: Photo) => setData((list) => [photo, ...(list ?? []).filter((p) => p.id !== photo.id)]);
 
   const remove = async (photo: Photo) => {
     update((list) => list.filter((p) => p.id !== photo.id));
     try {
       await api.deletePhoto(photo);
-      // Удалили фото, которое стоит на аватаре, — файла больше нет, убираем и аватар
       if (photo.ownerId === myId && profile?.avatar === photo.src) await updateProfile({ avatar: null });
       showSnackbar("Фотография удалена");
     } catch (e) {
@@ -268,7 +245,6 @@ export function usePhotos(ownerId: string | null, { communityId, albumId, bookma
     }
   };
 
-  // Удаление нескольких выбранных фото — одно уведомление на всё
   const removeMany = async (photos: Photo[]) => {
     const ids = photos.map((p) => p.id);
     update((list) => list.filter((p) => !ids.includes(p.id)));
@@ -315,7 +291,6 @@ export function usePhotos(ownerId: string | null, { communityId, albumId, bookma
     }
   };
 
-  // Перенос в другой альбом (null — на «мою страницу»). В списке одного альбома фото оттуда уходит
   const move = async (photos: Photo[], targetAlbumId: number | null, targetTitle: string) => {
     const ids = photos.map((p) => p.id);
     const leaves = albumId !== undefined && (targetAlbumId ?? 0) !== albumId;
@@ -336,7 +311,6 @@ export function usePhotos(ownerId: string | null, { communityId, albumId, bookma
   return { ...resource, photos: resource.data ?? [], upload, addLocal, remove, removeMany, move, toggleLike, comment, deleteComment };
 }
 
-// ---------- Фотоальбомы человека ----------
 export function useAlbums(ownerId: string) {
   const showSnackbar = useSnackbar();
   const resource = useResource<Album[]>(() => api.fetchAlbums(ownerId), [ownerId]);

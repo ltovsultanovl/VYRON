@@ -35,7 +35,6 @@ function Spinner({ text }: { text?: string }) {
   );
 }
 
-// Выбор нескольких фото: перенести или удалить разом
 function SelectionBar({
   count,
   onMove,
@@ -69,7 +68,6 @@ function SelectionBar({
   );
 }
 
-// Раздел «Фото»: #photos — мои, #photos/<id> — чужие, …/album/<id> — альбом (0 — «С моей страницы»)
 export default function Photos({
   param,
   sub,
@@ -86,7 +84,7 @@ export default function Photos({
   const own = !param || param === "album" || param === myId;
   const ownerId = own ? myId : param;
   const albumParam = param === "album" ? sub : sub === "album" ? section : "";
-  const albumId = albumParam === "" ? null : Number(albumParam); // null — обзор, 0 — без альбома
+  const albumId = albumParam === "" ? null : Number(albumParam);
   const base = own ? "#photos" : `#photos/${ownerId}`;
 
   const other = useUserProfile(own ? null : ownerId);
@@ -104,7 +102,6 @@ export default function Photos({
   const [uploading, setUploading] = useState(false);
   const [allAlbums, setAllAlbums] = useState(false);
 
-  // Перешли в другой альбом — выбор и просмотр сбрасываем
   const [shownAlbum, setShownAlbum] = useState(albumId);
   if (shownAlbum !== albumId) {
     setShownAlbum(albumId);
@@ -124,7 +121,6 @@ export default function Photos({
     [photos.photos, albumId],
   );
 
-  // Обложка и число фото для каждого альбома (0 — «С моей страницы»)
   const stats = useMemo(() => albumStats(albums.albums, photos.photos), [albums.albums, photos.photos]);
   const covers = Object.fromEntries(
     Object.entries(stats).map(([id, s]) => [id, s.cover]),
@@ -173,11 +169,10 @@ export default function Photos({
     });
   const selectedPhotos = list.filter((p) => selected.has(p.id));
 
-  // ---------- Состояния загрузки ----------
   if (!own && other.loading && !other.data)
     return <Spinner text="Загружаем фотографии…" />;
   if (!profile) {
-    if (own) return <Spinner />; // свой профиль есть всегда — сюда не попадём
+    if (own) return <Spinner />;
     return (
       <div className="card list-state">
         {other.error || "Такой страницы нет"}
@@ -220,7 +215,7 @@ export default function Photos({
   const albumTitle = albumId === 0 ? PROFILE_ALBUM_TITLE : album?.title;
   const albumsShown = allAlbums
     ? albums.albums
-    : albums.albums.slice(0, ALBUMS_PREVIEW - 1); // −1: системный альбом
+    : albums.albums.slice(0, ALBUMS_PREVIEW - 1);
 
   const actions = own && (
     <div className="photos-head__actions">
@@ -245,7 +240,6 @@ export default function Photos({
       className={`photos-page ${dragOver && own ? "photos-page--drag" : ""}`}
       {...(own ? dropProps : {})}
     >
-      {/* ---------- Шапка ---------- */}
       <section className="card photos-head">
         {albumId === null ? (
           <h1 className="photos-head__title">
@@ -295,7 +289,6 @@ export default function Photos({
         </div>
       ) : (
         <>
-          {/* ---------- Альбомы (только на обзоре) ---------- */}
           {albumId === null &&
             (stats[0].count > 0 || albums.albums.length > 0 || own) && (
               <section className="card photos-section">
@@ -332,7 +325,6 @@ export default function Photos({
               </section>
             )}
 
-          {/* ---------- Фотографии ---------- */}
           <section className="card photos-section">
             <div className="card__header">
               {albumId === null
@@ -391,7 +383,6 @@ export default function Photos({
         </div>
       )}
 
-      {/* ---------- Окна ---------- */}
       {viewer && list[viewer.index] && (
         <PhotoViewer
           photos={list}

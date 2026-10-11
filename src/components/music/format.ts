@@ -1,6 +1,3 @@
-// 3:07, 1:02:15
-import type { Track } from "../../types";
-
 export const formatDuration = (sec: number) => {
   if (!Number.isFinite(sec) || sec <= 0) return "0:00";
   const s = Math.floor(sec);
@@ -10,16 +7,12 @@ export const formatDuration = (sec: number) => {
   return h ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
 };
 
-// «1 ч 12 мин» — общая длительность плейлиста
 export const formatTotal = (sec: number) => {
   if (sec < 60) return `${Math.round(sec)} с`;
   const m = Math.round(sec / 60);
   return m >= 60 ? `${Math.floor(m / 60)} ч ${m % 60} мин` : `${m} мин`;
 };
 
-export const trackLabel = (t: Pick<Track, "artist" | "title">) => (t.artist ? `${t.artist} — ${t.title}` : t.title);
-
-// Обложка-градиент по названию: у одинаковых треков одинаковый цвет
 export const coverGradient = (seed = ""): string => {
   let h = 0;
   for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) % 360;

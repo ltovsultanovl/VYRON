@@ -10,7 +10,6 @@ import type { Photo } from "../../types";
 
 const PREVIEW = 3;
 
-// Вкладка «Альбомы» в профиле: первые альбомы и ссылка на раздел «Фото»
 export default function AlbumsTab({
   owner,
   isMe,

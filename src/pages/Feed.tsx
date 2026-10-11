@@ -27,13 +27,11 @@ export default function Feed() {
   const { friends } = useFriends();
   const [tab, setTab] = useState<FeedTab>("news");
 
-  // Новости — записи на стенах друзей и на моей
   const { joined } = useCommunities();
   const ownerIds = useMemo(
     () => [myId, ...friends.map((f) => f.id)].sort(),
     [myId, friends],
   );
-  // Новости — друзья, я и сообщества, на которые я подписан
   const communityIds = useMemo(
     () => joined.map((c) => c.id).sort((a, b) => a - b),
     [joined],

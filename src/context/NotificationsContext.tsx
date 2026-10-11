@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { supabase } from "../lib/supabase";
 import { useProfile } from "./ProfileContext";
 import { useSnackbar } from "../components/Snackbar";
@@ -19,7 +27,6 @@ interface NotificationsValue {
 
 const NotificationsContext = createContext<NotificationsValue | null>(null);
 
-// Мои уведомления: загрузка, новые в реальном времени, «прочитано», «скрыть»
 export function NotificationsProvider({ children }: { children: ReactNode }) {
   const { myId } = useProfile();
   const showSnackbar = useSnackbar();
@@ -47,7 +54,12 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       .channel("notifications")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${myId}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${myId}`,
+        },
         async (payload) => {
           if (payload.eventType === "DELETE") {
             const old = payload.old as { id?: number };
@@ -61,11 +73,11 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
             setList((l) => l.map((n) => (n.id === id ? { ...n, readAt } : n)));
             return;
           }
-          // Новое: подгружаем с автором и объектом и показываем всплывашку
           const fresh = await api.fetchNotification(id).catch(() => null);
           if (!fresh || cancelled) return;
           setList((l) => [fresh, ...l.filter((n) => n.id !== fresh.id)]);
-          if (!location.hash.startsWith("#notifications")) showSnackbar(summary(fresh), "info");
+          if (!location.hash.startsWith("#notifications"))
+            showSnackbar(summary(fresh), "info");
         },
       )
       .subscribe();
@@ -76,7 +88,6 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     };
   }, [myId, attempt, showSnackbar]);
 
-  // Вернулись после перерыва — перечитываем: пока не было связи, что-то могло прийти
   useResume(() => setAttempt((a) => a + 1));
 
   const markAllRead = useCallback(() => {
@@ -89,7 +100,6 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         return { ...n, readAt: now };
       }),
     );
-    // Запрос — только если было что отмечать
     queueMicrotask(() => {
       if (changed) api.markNotificationsRead(myId).catch(() => {});
     });
@@ -119,11 +129,18 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     [status, error, list, markAllRead, hide],
   );
 
-  return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
+  return (
+    <NotificationsContext.Provider value={value}>
+      {children}
+    </NotificationsContext.Provider>
+  );
 }
 
 export function useNotifications() {
   const context = useContext(NotificationsContext);
-  if (!context) throw new Error("useNotifications нужно вызывать внутри <NotificationsProvider>");
+  if (!context)
+    throw new Error(
+      "useNotifications нужно вызывать внутри <NotificationsProvider>",
+    );
   return context;
 }

@@ -1,7 +1,5 @@
 import { CloseIcon, SearchIcon } from "./Icons";
 
-// Общие состояния списков: загрузка, ошибка с «Повторить», строка поиска
-
 export function Loading() {
   return (
     <div className="list-state" role="status">
@@ -10,7 +8,13 @@ export function Loading() {
   );
 }
 
-export function Failed({ error, onRetry }: { error: string; onRetry: () => void }) {
+export function Failed({
+  error,
+  onRetry,
+}: {
+  error: string;
+  onRetry: () => void;
+}) {
   return (
     <div className="list-state" role="alert">
       {error}
@@ -45,7 +49,12 @@ export function SearchField({
           autoFocus={autoFocus}
         />
         {value && (
-          <button type="button" className="search__clear" title="Очистить" onClick={() => onChange("")}>
+          <button
+            type="button"
+            className="search__clear"
+            title="Очистить"
+            onClick={() => onChange("")}
+          >
             <CloseIcon size={16} />
           </button>
         )}

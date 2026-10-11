@@ -5,7 +5,6 @@ import type { Album } from "../../types";
 
 export const PROFILE_ALBUM_TITLE = "Фотографии с моей страницы";
 
-// «Перенести в альбом»: список своих альбомов, текущий отмечен галочкой
 export default function MoveToAlbumModal({
   albums,
   currentAlbumId,

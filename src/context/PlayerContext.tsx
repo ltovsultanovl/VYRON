@@ -1,12 +1,18 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Track } from "../types";
 import { useSnackbar } from "../components/Snackbar";
 import { useStoredState } from "../hooks";
 
-// Сквозной плеер как в VK: очередь, вперёд/назад, перемешать, повтор, громкость.
-// Время воспроизведения — в отдельном контексте, чтобы каждые 250 мс
-// перерисовывались только полоска прогресса и таймер, а не всё приложение
-export type RepeatMode = "off" | "all" | "one";
+type RepeatMode = "off" | "all" | "one";
 
 interface PlayerValue {
   current: Track | null;
@@ -48,18 +54,20 @@ const shuffled = (length: number, first: number) => {
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const showSnackbar = useSnackbar();
   const [queue, setQueue] = useState<Track[]>([]);
-  const [order, setOrder] = useState<number[]>([]); // порядок индексов очереди (при перемешивании — случайный)
-  const [position, setPosition] = useState(0); // место в order
+  const [order, setOrder] = useState<number[]>([]);
+  const [position, setPosition] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
   const [shuffle, setShuffle] = useStoredState("player:shuffle", false);
-  const [repeat, setRepeat] = useStoredState<RepeatMode>("player:repeat", "off");
+  const [repeat, setRepeat] = useStoredState<RepeatMode>(
+    "player:repeat",
+    "off",
+  );
   const [volume, setVolumeState] = useStoredState("player:volume", 0.8);
   const [time, setTime] = useState({ time: 0, duration: 0 });
 
   const current = queue[order[position]] ?? null;
 
-  // Один <audio> на всё приложение
   const [audio] = useState(() => new Audio());
 
   useEffect(() => {
@@ -76,18 +84,20 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         () => setLoading(false),
         (e: Error) => {
           setLoading(false);
-          if (e.name !== "AbortError") showSnackbar("Не удалось воспроизвести аудиозапись", "error");
+          if (e.name !== "AbortError")
+            showSnackbar("Не удалось воспроизвести аудиозапись", "error");
         },
       );
     },
     [audio, showSnackbar],
   );
 
-  // Включить список треков с позиции index
   const play = useCallback(
     (tracks: Track[], index = 0) => {
       if (!tracks.length) return;
-      const nextOrder = shuffle ? shuffled(tracks.length, index) : [...tracks.keys()];
+      const nextOrder = shuffle
+        ? shuffled(tracks.length, index)
+        : [...tracks.keys()];
       setQueue(tracks);
       setOrder(nextOrder);
       setPosition(shuffle ? 0 : index);
@@ -96,7 +106,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [shuffle, startAt],
   );
 
-  // Перемешать и включить
   const playShuffled = useCallback(
     (tracks: Track[]) => {
       if (!tracks.length) return;
@@ -111,7 +120,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   );
 
   const isCurrent = useCallback(
-    (track: Track | null | undefined) => !!current && !!track && current.id === track.id,
+    (track: Track | null | undefined) =>
+      !!current && !!track && current.id === track.id,
     [current],
   );
 
@@ -120,7 +130,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (current) audio.play().catch(() => {});
   }, [audio, current]);
 
-  // Клик по треку в списке: свой — пауза/продолжить, другой — включить список с него
   const toggle = useCallback(
     (track?: Track, tracks?: Track[], index?: number) => {
       if (!track || isCurrent(track)) return audio.paused ? resume() : pause();
@@ -141,7 +150,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     (auto = false) => {
       if (!queue.length) return;
       if (position + 1 < order.length) return goTo(position + 1);
-      if (repeat === "all" || !auto) return goTo(0); // кнопкой «вперёд» с последнего — на первый
+      if (repeat === "all" || !auto) return goTo(0);
       audio.pause();
       audio.currentTime = 0;
     },
@@ -164,7 +173,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [audio],
   );
 
-  const setVolume = useCallback((v: number) => setVolumeState(Math.min(1, Math.max(0, v))), [setVolumeState]);
+  const setVolume = useCallback(
+    (v: number) => setVolumeState(Math.min(1, Math.max(0, v))),
+    [setVolumeState],
+  );
 
   const toggleShuffle = useCallback(() => {
     setShuffle((on) => {
@@ -178,11 +190,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [order, position, queue, setShuffle]);
 
   const cycleRepeat = useCallback(
-    () => setRepeat((r) => ({ off: "all", all: "one", one: "off" } as const)[r] ?? "off"),
+    () =>
+      setRepeat(
+        (r) => (({ off: "all", all: "one", one: "off" }) as const)[r] ?? "off",
+      ),
     [setRepeat],
   );
 
-  // Трек удалили / убрали — убираем из очереди
   const forget = useCallback(
     (track: Track) => {
       if (isCurrent(track)) {
@@ -193,15 +207,21 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         setPosition(0);
         return;
       }
-      setQueue((q) => q.map((t) => (t.id === track.id ? { ...t, removed: true } : t)));
+      setQueue((q) =>
+        q.map((t) => (t.id === track.id ? { ...t, removed: true } : t)),
+      );
     },
     [audio, isCurrent],
   );
 
-  // Обновить название/исполнителя у трека в очереди
-  const patchTrack = useCallback((track: Pick<Track, "id"> & Partial<Track>) => setQueue((q) => q.map((t) => (t.id === track.id ? { ...t, ...track } : t))), []);
+  const patchTrack = useCallback(
+    (track: Pick<Track, "id"> & Partial<Track>) =>
+      setQueue((q) =>
+        q.map((t) => (t.id === track.id ? { ...t, ...track } : t)),
+      ),
+    [],
+  );
 
-  // События <audio>
   const nextRef = useRef(next);
   const repeatRef = useRef(repeat);
   useEffect(() => {
@@ -214,7 +234,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const now = performance.now();
       if (now - last < 250 && !audio.paused) return;
       last = now;
-      setTime({ time: audio.currentTime, duration: Number.isFinite(audio.duration) ? audio.duration : 0 });
+      setTime({
+        time: audio.currentTime,
+        duration: Number.isFinite(audio.duration) ? audio.duration : 0,
+      });
     };
     const onPlay = () => setPlaying(true);
     const onPause = () => setPlaying(false);
@@ -228,18 +251,34 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     };
     const onError = () => {
       setLoading(false);
-      if (audio.getAttribute("src")) showSnackbar("Не удалось загрузить аудиозапись", "error");
+      if (audio.getAttribute("src"))
+        showSnackbar("Не удалось загрузить аудиозапись", "error");
     };
-    const events = { timeupdate: onTime, loadedmetadata: onTime, seeked: onTime, play: onPlay, pause: onPause, waiting: onWaiting, playing: onPlaying, ended: onEnded, error: onError };
+    const events = {
+      timeupdate: onTime,
+      loadedmetadata: onTime,
+      seeked: onTime,
+      play: onPlay,
+      pause: onPause,
+      waiting: onWaiting,
+      playing: onPlaying,
+      ended: onEnded,
+      error: onError,
+    };
     Object.entries(events).forEach(([e, f]) => audio.addEventListener(e, f));
-    return () => Object.entries(events).forEach(([e, f]) => audio.removeEventListener(e, f));
+    return () =>
+      Object.entries(events).forEach(([e, f]) =>
+        audio.removeEventListener(e, f),
+      );
   }, [audio, showSnackbar]);
 
-  // Кнопки на клавиатуре и в системе (Media Session)
   useEffect(() => {
     const session = navigator.mediaSession;
     if (!session || !current) return;
-    session.metadata = new MediaMetadata({ title: current.title, artist: current.artist || "Неизвестный исполнитель" });
+    session.metadata = new MediaMetadata({
+      title: current.title,
+      artist: current.artist || "Неизвестный исполнитель",
+    });
     const handlers: [MediaSessionAction, () => void][] = [
       ["play", resume],
       ["pause", pause],
@@ -249,9 +288,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     handlers.forEach(([action, handler]) => {
       try {
         session.setActionHandler(action, handler);
-      } catch {
-        /* браузер не поддерживает это действие */
-      }
+      } catch {}
     });
   }, [current, next, pause, prev, resume]);
 
@@ -282,19 +319,46 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       forget,
       patchTrack,
     }),
-    [current, queue, playing, loading, shuffle, repeat, volume, position, order.length, play, playShuffled, toggle, pause, resume, next, prev, seek, setVolume, toggleShuffle, cycleRepeat, isCurrent, forget, patchTrack],
+    [
+      current,
+      queue,
+      playing,
+      loading,
+      shuffle,
+      repeat,
+      volume,
+      position,
+      order.length,
+      play,
+      playShuffled,
+      toggle,
+      pause,
+      resume,
+      next,
+      prev,
+      seek,
+      setVolume,
+      toggleShuffle,
+      cycleRepeat,
+      isCurrent,
+      forget,
+      patchTrack,
+    ],
   );
 
   return (
     <PlayerContext.Provider value={value}>
-      <PlayerTimeContext.Provider value={time}>{children}</PlayerTimeContext.Provider>
+      <PlayerTimeContext.Provider value={time}>
+        {children}
+      </PlayerTimeContext.Provider>
     </PlayerContext.Provider>
   );
 }
 
 export function usePlayer() {
   const context = useContext(PlayerContext);
-  if (!context) throw new Error("usePlayer нужно вызывать внутри <PlayerProvider>");
+  if (!context)
+    throw new Error("usePlayer нужно вызывать внутри <PlayerProvider>");
   return context;
 }
 

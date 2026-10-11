@@ -41,7 +41,6 @@ function Empty({ tab }: { tab: Tab }) {
   );
 }
 
-// Список «загрузка / ошибка / пусто / данные» для простых вкладок
 function State<T>({ res, tab, children }: { res: Resource<T[]>; tab: Tab; children: (items: T[]) => ReactNode }) {
   if (res.loading && !res.data) return <Loading />;
   if (res.error) return <Failed error={res.error} onRetry={res.reload} />;
@@ -65,9 +64,8 @@ function SavedPhotos({ version }: { version: number }) {
   const owners = useResource(() => api.fetchPeopleByIds(ownerIds), [ownerIds.join()]);
   const { reload } = photos;
   useEffect(() => {
-    // Пока открыт просмотр, список не трогаем — иначе фото «уедет» из-под пальца
     if (version && index === null) reload();
-  }, [version, reload]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [version, reload]);
 
   if (photos.loading && !photos.data) return <Loading />;
   if (photos.error) return <Failed error={photos.error} onRetry={photos.reload} />;
@@ -170,7 +168,6 @@ function SavedCommunities({ version }: { version: number }) {
   );
 }
 
-// «Закладки» как в VK: сохранённые записи, фото, видео, люди и сообщества
 export default function Bookmarks({ section, onNavigate }: { section: string; onNavigate: Navigate }) {
   const { version } = useBookmarks();
   const tab: Tab = TABS.some((t) => t.id === section) ? (section as Tab) : "posts";

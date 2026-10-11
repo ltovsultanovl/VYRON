@@ -4,7 +4,6 @@ import { usePlayer } from "../../context/PlayerContext";
 import { useDropdown } from "../../hooks";
 import type { Navigate } from "../../types";
 
-// Нота в шапке: без музыки — переход в раздел, с музыкой — мини-плеер как в VK
 export default function HeaderPlayer({ onNavigate }: { onNavigate: Navigate }) {
   const player = usePlayer();
   const menu = useDropdown();

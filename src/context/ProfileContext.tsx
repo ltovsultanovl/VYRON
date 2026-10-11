@@ -1,4 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Profile } from "../types";
 import { createProfile, explainError, fetchProfile, saveProfile } from "../api";
 import { fullName } from "../profile";
@@ -21,8 +30,6 @@ export interface NewProfile {
 
 const ProfileContext = createContext<ProfileValue | null>(null);
 
-// Свой профиль запоминаем в браузере: при следующем запуске страница открывается сразу,
-// без заставки, а свежая версия с сервера подтягивается в фоне
 const cacheKey = (userId: string) => `profile:${userId}`;
 const readCached = (userId: string): Profile | undefined => {
   try {
@@ -34,19 +41,23 @@ const readCached = (userId: string): Profile | undefined => {
 };
 const writeCached = (userId: string, profile: Profile | null | undefined) => {
   try {
-    if (profile) localStorage.setItem(cacheKey(userId), JSON.stringify(profile));
+    if (profile)
+      localStorage.setItem(cacheKey(userId), JSON.stringify(profile));
     else if (profile === null) localStorage.removeItem(cacheKey(userId));
-  } catch {
-    // Места нет или хранилище недоступно — просто работаем без кэша
-  }
+  } catch {}
 };
 
-// Профиль вошедшего пользователя с сервера. Пока грузится — заставка (если в браузере
-// нет сохранённой копии), если профиля ещё нет (первый вход) — форма «Как вас зовут?»
-export function ProfileProvider({ userId, children }: { userId: string; children: ReactNode }) {
+export function ProfileProvider({
+  userId,
+  children,
+}: {
+  userId: string;
+  children: ReactNode;
+}) {
   const showSnackbar = useSnackbar();
-  // undefined — грузим, null — нет профиля
-  const [profile, setProfile] = useState<Profile | null | undefined>(() => readCached(userId));
+  const [profile, setProfile] = useState<Profile | null | undefined>(() =>
+    readCached(userId),
+  );
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   const profileRef = useRef(profile);
@@ -60,7 +71,6 @@ export function ProfileProvider({ userId, children }: { userId: string; children
     fetchProfile(userId)
       .then((p) => !cancelled && setProfile(p))
       .catch((e) => {
-        // Есть сохранённая копия — показываем её, а не экран ошибки
         if (!cancelled && !profileRef.current) setError(explainError(e));
       });
     return () => {
@@ -68,13 +78,12 @@ export function ProfileProvider({ userId, children }: { userId: string; children
     };
   }, [userId, attempt]);
 
-  // Оптимистично меняем профиль, при ошибке откатываем. Возвращает true, если сохранилось
   const updateProfile = useCallback(
     async (patch: Partial<Profile>) => {
       const previous = profileRef.current;
       if (!previous) return false;
       const next: Profile = { ...previous, ...patch };
-      profileRef.current = next; // следующий вызов подряд должен видеть уже новые данные
+      profileRef.current = next;
       setProfile(next);
       try {
         await saveProfile(next);
@@ -97,7 +106,10 @@ export function ProfileProvider({ userId, children }: { userId: string; children
   useEffect(() => writeCached(userId, profile), [userId, profile]);
 
   const value = useMemo(
-    () => (profile ? { profile, name: fullName(profile), myId: userId, updateProfile } : null),
+    () =>
+      profile
+        ? { profile, name: fullName(profile), myId: userId, updateProfile }
+        : null,
     [profile, userId, updateProfile],
   );
 
@@ -107,11 +119,14 @@ export function ProfileProvider({ userId, children }: { userId: string; children
   if (profile === undefined) return <Splash />;
   if (profile === null) return <Onboarding onSubmit={register} />;
 
-  return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
+  return (
+    <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>
+  );
 }
 
 export function useProfile() {
   const context = useContext(ProfileContext);
-  if (!context) throw new Error("useProfile нужно вызывать внутри <ProfileProvider>");
+  if (!context)
+    throw new Error("useProfile нужно вызывать внутри <ProfileProvider>");
   return context;
 }

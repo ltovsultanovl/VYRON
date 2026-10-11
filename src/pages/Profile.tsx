@@ -59,12 +59,9 @@ import type { CommunityBrief, Navigate, Person, Photo, Profile as ProfileType } 
 const DEFAULT_COVER = "var(--cover-empty)";
 const STATUS_LIMIT = 140;
 
-// Удаляем старый файл аватара/обложки, только если он лежит в своей папке
-// (аватаром может быть фото из альбома — его трогать нельзя)
 const removeOld = (url: string | null, folder: string) =>
   url?.includes(`/${folder}/`) && removeImage(url).catch(() => {});
 
-// ---------- Обложка ----------
 type PhotoAlbum = ReturnType<typeof usePhotos>;
 
 function Cover({ profile, editable }: { profile: ProfileType; editable: boolean }) {
@@ -152,7 +149,6 @@ function Cover({ profile, editable }: { profile: ProfileType; editable: boolean 
   );
 }
 
-// ---------- Аватар как в VK: клик открывает фото, у своего при наведении — «Обновить / Удалить» ----------
 function ProfileAvatar({
   profile,
   editable,
@@ -170,8 +166,6 @@ function ProfileAvatar({
   const [modal, setModal] = useState<"upload" | "delete" | null>(null);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
-  // Аватар — это одно из фото со страницы: открываем просмотр на нём и даём листать остальные.
-  // Старый аватар без записи в «Фото» показываем отдельно, без лайков и комментариев
   const avatarIndex = album.photos.findIndex((p) => p.src === profile.avatar);
   const viewerPhotos: Photo[] =
     avatarIndex >= 0
@@ -278,7 +272,7 @@ function ProfileAvatar({
             setModal(null);
             const old = profile.avatar;
             if (await updateProfile({ avatar: null })) {
-              removeOld(old, "avatars"); // файл удаляем, только если это старый отдельный аватар
+              removeOld(old, "avatars");
               showSnackbar("Фотография убрана с аватара");
             }
           }}
@@ -289,7 +283,6 @@ function ProfileAvatar({
   );
 }
 
-// ---------- Статус: свой редактируется по клику ----------
 function Status({ profile, editable }: { profile: ProfileType; editable: boolean }) {
   const { updateProfile } = useProfile();
   const [editing, setEditing] = useState(false);
@@ -348,7 +341,6 @@ function Status({ profile, editable }: { profile: ProfileType; editable: boolean
   );
 }
 
-// ---------- Медиа: фото (с сервера) и личные вкладки (только на своей странице) ----------
 type MediaTab = "photos" | "albums" | "music" | "video";
 
 const MEDIA_TABS: { id: MediaTab; label: string; Icon: Icon }[] = [
@@ -359,7 +351,6 @@ const MEDIA_TABS: { id: MediaTab; label: string; Icon: Icon }[] = [
 ];
 const PHOTOS_PREVIEW = 6;
 
-// Плитка фото: клик открывает просмотр, ✕ в углу — удаление (только своих)
 export function PhotoTile({ photo, onOpen, onDelete }: { photo: Photo; onOpen: () => void; onDelete?: () => void }) {
   return (
     <div className="media__photo">
@@ -421,7 +412,6 @@ function MediaCard({ owner, isMe, album }: { owner: Person; isMe: boolean; album
   });
   const [dragOver, dropProps] = useFileDrop(upload);
   const uploadLabel = uploading ? "Загрузка…" : "Загрузить фото";
-  // Удалять свои фото можно крестиком на плитке; у чужих крестика нет
   const askDelete = (photo: Photo) => (isMe ? () => setToDelete(photo) : undefined);
 
   return (
@@ -544,7 +534,6 @@ function MediaCard({ owner, isMe, album }: { owner: Person; isMe: boolean; album
   );
 }
 
-// ---------- «Создать пост»: свёрнутая кнопка раскрывается в редактор ----------
 function CreatePost({
   owner,
   isMe,
@@ -583,7 +572,6 @@ function CreatePost({
   );
 }
 
-// ---------- Стена ----------
 const WALL_TABS: { id: "all" | "own"; label: string }[] = [
   { id: "all", label: "Все записи" },
   { id: "own", label: "Записи владельца" },
@@ -595,7 +583,6 @@ function Wall({ owner, isMe, feed }: { owner: Person; isMe: boolean; feed: Posts
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
 
-  // Фильтры по вкладке и поиску — поверх загруженной стены
   const view = useMemo(
     () => ({
       ...feed,
@@ -664,11 +651,8 @@ function Wall({ owner, isMe, feed }: { owner: Person; isMe: boolean; feed: Posts
   );
 }
 
-// На компьютере в колонке видно 8 друзей и 5 подписок (лишнее прячет CSS),
-// на телефоне — плитка с аватарками внахлёст
 const MINI_STRIP_LIMIT = 8;
 
-// ---------- Друзья человека (правая колонка, на телефоне — над фото и записями) ----------
 function FriendsCard({ owner, isMe }: { owner: Person; isMe: boolean }) {
   const mine = useFriends();
   const theirs = useFriendsOf(isMe ? null : owner.id);
@@ -714,7 +698,6 @@ function FriendsCard({ owner, isMe }: { owner: Person; isMe: boolean }) {
   );
 }
 
-// ---------- Подписки: сообщества человека (как в VK — в правой колонке) ----------
 function SubscriptionsCard({ userId, isMe }: { userId: string; isMe: boolean }) {
   const list = useResource(
     () => fetchUserCommunities(userId).catch((): CommunityBrief[] => []),
@@ -754,7 +737,6 @@ function SubscriptionsCard({ userId, isMe }: { userId: string; isMe: boolean }) 
   );
 }
 
-// ---------- «⋯» на чужой странице: заблокировать / разблокировать ----------
 function ProfileMoreMenu({ person }: { person: Person }) {
   const menu = useDropdown();
   const { isBlocked, block, unblock } = useBlocks();
@@ -804,7 +786,6 @@ function ProfileMoreMenu({ person }: { person: Person }) {
   );
 }
 
-// ---------- Страница ----------
 export default function Profile({ userId, onNavigate }: { userId: string; onNavigate: Navigate }) {
   const { myId, profile: myProfile } = useProfile();
   const { relationTo } = useFriends();
@@ -813,13 +794,12 @@ export default function Profile({ userId, onNavigate }: { userId: string; onNavi
   const onlineIds = useOnlineIds();
   const isMe = userId === myId;
   const other = useUserProfile(isMe ? myId : userId);
-  // Не заблокировал ли меня хозяин страницы — проверяем при каждом открытии
   useEffect(() => {
     if (!isMe) refreshBlockedMe();
   }, [isMe, userId, refreshBlockedMe]);
   const profile = isMe ? myProfile : other.data;
   const feed = usePosts({ wall: userId });
-  const album = usePhotos(userId); // общий для аватара и блока «Фото»
+  const album = usePhotos(userId);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
 
@@ -871,7 +851,6 @@ export default function Profile({ userId, onNavigate }: { userId: string; onNavi
   const canPost = (isMe || relationTo(userId) === "friend") && !iBlocked && !blockedMe;
   const she = profile.gender === "female";
 
-  // Меня заблокировали — как в VK: только имя и аватар, без записей и кнопок
   if (blockedMe) {
     return (
       <div className="card profile-head">

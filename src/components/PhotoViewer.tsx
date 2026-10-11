@@ -30,8 +30,7 @@ import { useDropdown, useScrollLock } from "../hooks";
 import { formatCount, formatDate } from "../utils";
 import type { Album, Comment, Photo } from "../types";
 
-// Владелец фото для шапки просмотра: человек или сообщество
-export interface PhotoOwner {
+interface PhotoOwner {
   id: string;
   name: string;
   firstName?: string;
@@ -39,7 +38,6 @@ export interface PhotoOwner {
   avatar: string | null;
 }
 
-// ---------- «Ещё» под фото ----------
 type MenuAction = (() => void) | false | null | undefined | 0;
 
 function MoreMenu({
@@ -111,9 +109,6 @@ function MoreMenu({
   );
 }
 
-// ---------- Просмотр фото как в VK: фото слева, автор и комментарии справа ----------
-// owner — владелец фото; удалять фото и ставить на аватар может только он сам.
-// Действия — из usePhotos: onDelete, onToggleLike, onComment, onDeleteComment
 export default function PhotoViewer({
   photos,
   index,
@@ -125,12 +120,9 @@ export default function PhotoViewer({
   onToggleLike,
   onComment,
   onDeleteComment,
-  // Для фото сообщества: canManage — может удалять, ownerHref — ссылка на сообщество,
-  // allowMakeAvatar={false} — без «Сделать фото профиля»
   canManage,
   ownerHref,
   allowMakeAvatar = true,
-  // Альбомы владельца: albums — список, onMove(photo, albumId, title), onSetCover(photo) — только внутри альбома
   albums,
   onMove,
   onSetCover,
@@ -177,13 +169,12 @@ export default function PhotoViewer({
     [index, count, onIndexChange],
   );
 
-  // ← → листают (кроме ввода комментария), Esc закрывает.
-  // Пока открыто подтверждение удаления, клавиши обрабатывает оно
   useEffect(() => {
     if (confirming || sharing || moving) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") return onClose();
-      if ((e.target as HTMLElement | null)?.tagName === "INPUT" || count < 2) return;
+      if ((e.target as HTMLElement | null)?.tagName === "INPUT" || count < 2)
+        return;
       if (e.key === "ArrowLeft") go(-1);
       if (e.key === "ArrowRight") go(1);
     };
@@ -214,7 +205,6 @@ export default function PhotoViewer({
     if (!ok) return;
     setComment("");
     mentions.reset();
-    // Прокручиваем к новому комментарию
     requestAnimationFrame(() => {
       const el = commentsRef.current;
       if (el) el.scrollTop = el.scrollHeight;
@@ -233,11 +223,12 @@ export default function PhotoViewer({
       </button>
 
       <div className="viewer__box">
-        {/* ---------- Фото ---------- */}
         <div className="viewer__stage">
           <div className="viewer__image">
             {photo.src === failedSrc ? (
-              <div className="viewer__broken">Не удалось загрузить фотографию</div>
+              <div className="viewer__broken">
+                Не удалось загрузить фотографию
+              </div>
             ) : (
               <img
                 src={photo.src}
@@ -249,10 +240,18 @@ export default function PhotoViewer({
             )}
             {count > 1 && (
               <>
-                <button className="viewer__nav viewer__nav--prev" onClick={() => go(-1)} title="Предыдущая">
+                <button
+                  className="viewer__nav viewer__nav--prev"
+                  onClick={() => go(-1)}
+                  title="Предыдущая"
+                >
                   <ChevronLeftIcon size={32} />
                 </button>
-                <button className="viewer__nav viewer__nav--next" onClick={() => go(1)} title="Следующая">
+                <button
+                  className="viewer__nav viewer__nav--next"
+                  onClick={() => go(1)}
+                  title="Следующая"
+                >
                   <ChevronRightIcon size={32} />
                 </button>
               </>
@@ -260,7 +259,9 @@ export default function PhotoViewer({
           </div>
 
           <div className="viewer__bar">
-            <span className="viewer__album">{album ?? `Фотографии · ${owner.name}`}</span>
+            <span className="viewer__album">
+              {album ?? `Фотографии · ${owner.name}`}
+            </span>
             <span className="viewer__counter">
               {index + 1} из {count}
             </span>
@@ -271,7 +272,10 @@ export default function PhotoViewer({
               {isMine && !photo.readOnly && (
                 <>
                   <span className="viewer__dot">·</span>
-                  <button className="viewer__link" onClick={() => setConfirming(true)}>
+                  <button
+                    className="viewer__link"
+                    onClick={() => setConfirming(true)}
+                  >
                     Удалить
                   </button>
                 </>
@@ -289,17 +293,32 @@ export default function PhotoViewer({
                     }
                   })
                 }
-                onMove={isMine && onMove && albums && !photo.readOnly && (() => setMoving(true))}
-                onSetCover={isMine && onSetCover && photo.albumId && (() => onSetCover(photo))}
+                onMove={
+                  isMine &&
+                  onMove &&
+                  albums &&
+                  !photo.readOnly &&
+                  (() => setMoving(true))
+                }
+                onSetCover={
+                  isMine &&
+                  onSetCover &&
+                  photo.albumId &&
+                  (() => onSetCover(photo))
+                }
               />
             </div>
           </div>
         </div>
 
-        {/* ---------- Автор, лайки, комментарии ---------- */}
         <aside className="viewer__side">
           <header className="viewer__author">
-            <Avatar name={owner.name} color={owner.color} src={owner.avatar} size={48} />
+            <Avatar
+              name={owner.name}
+              color={owner.color}
+              src={owner.avatar}
+              size={48}
+            />
             <div>
               <a href={href} className="viewer__name" onClick={onClose}>
                 {owner.name}
@@ -311,89 +330,122 @@ export default function PhotoViewer({
           {photo.readOnly ? (
             <div className="viewer__comments">
               <div className="viewer__empty">
-                Это фото загружено на аватар раньше, чем появились лайки и комментарии. Обновите
-                фотографию профиля — и её можно будет оценить и обсудить.
+                Это фото загружено на аватар раньше, чем появились лайки и
+                комментарии. Обновите фотографию профиля — и её можно будет
+                оценить и обсудить.
               </div>
             </div>
           ) : (
             <>
-            <div className="viewer__actions">
-              <button
-                className={`viewer__action ${photo.liked ? "viewer__action--liked" : ""}`}
-                onClick={() => onToggleLike(photo)}
-                title="Нравится"
-              >
-                <LikeIcon size={28} filled={photo.liked} />
-                {photo.likes > 0 && <span>{formatCount(photo.likes)}</span>}
-              </button>
-              <button className="viewer__action" onClick={share} title="Поделиться">
-                <ShareIcon size={28} />
-              </button>
-              <button
-                className={`viewer__action ${isSaved("photo", photo.id) ? "viewer__action--saved" : ""}`}
-                onClick={() => toggleBookmark("photo", photo.id)}
-                title={isSaved("photo", photo.id) ? "Удалить из закладок" : "В закладки"}
-              >
-                {isSaved("photo", photo.id) ? <BookmarkFilledIcon size={28} /> : <BookmarkIcon size={28} />}
-              </button>
-            </div>
+              <div className="viewer__actions">
+                <button
+                  className={`viewer__action ${photo.liked ? "viewer__action--liked" : ""}`}
+                  onClick={() => onToggleLike(photo)}
+                  title="Нравится"
+                >
+                  <LikeIcon size={28} filled={photo.liked} />
+                  {photo.likes > 0 && <span>{formatCount(photo.likes)}</span>}
+                </button>
+                <button
+                  className="viewer__action"
+                  onClick={share}
+                  title="Поделиться"
+                >
+                  <ShareIcon size={28} />
+                </button>
+                <button
+                  className={`viewer__action ${isSaved("photo", photo.id) ? "viewer__action--saved" : ""}`}
+                  onClick={() => toggleBookmark("photo", photo.id)}
+                  title={
+                    isSaved("photo", photo.id)
+                      ? "Удалить из закладок"
+                      : "В закладки"
+                  }
+                >
+                  {isSaved("photo", photo.id) ? (
+                    <BookmarkFilledIcon size={28} />
+                  ) : (
+                    <BookmarkIcon size={28} />
+                  )}
+                </button>
+              </div>
 
-            <div className="viewer__comments" ref={commentsRef}>
-              {photo.comments.length === 0 ? (
-                <div className="viewer__empty">
-                  <CommentIcon size={56} />
-                  Оставьте первый комментарий к этой фотографии
-                </div>
-              ) : (
-                photo.comments.map((c) => (
-                  <div key={c.id} className="comment viewer__comment">
-                    <Avatar name={c.author.name} color={c.author.color} src={c.author.avatar} size={32} />
-                    <div className="comment__body">
-                      <a href={`#user/${c.author.id}`} className="comment__name" onClick={onClose}>
-                        {c.author.name}
-                      </a>
-                      <div className="comment__text">
-                        <MentionText text={c.text} />
-                      </div>
-                      <div className="comment__meta">
-                        <span>{formatDate(c.createdAt)}</span>
-                        {(isMine || c.author.id === myId) && (
-                          <button className="comment__reply" onClick={() => onDeleteComment(photo, c)}>
-                            Удалить
-                          </button>
-                        )}
+              <div className="viewer__comments" ref={commentsRef}>
+                {photo.comments.length === 0 ? (
+                  <div className="viewer__empty">
+                    <CommentIcon size={56} />
+                    Оставьте первый комментарий к этой фотографии
+                  </div>
+                ) : (
+                  photo.comments.map((c) => (
+                    <div key={c.id} className="comment viewer__comment">
+                      <Avatar
+                        name={c.author.name}
+                        color={c.author.color}
+                        src={c.author.avatar}
+                        size={32}
+                      />
+                      <div className="comment__body">
+                        <a
+                          href={`#user/${c.author.id}`}
+                          className="comment__name"
+                          onClick={onClose}
+                        >
+                          {c.author.name}
+                        </a>
+                        <div className="comment__text">
+                          <MentionText text={c.text} />
+                        </div>
+                        <div className="comment__meta">
+                          <span>{formatDate(c.createdAt)}</span>
+                          {(isMine || c.author.id === myId) && (
+                            <button
+                              className="comment__reply"
+                              onClick={() => onDeleteComment(photo, c)}
+                            >
+                              Удалить
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <form className="viewer__form" onSubmit={submit}>
-              <MeAvatar size={32} />
-              <div className="viewer__input">
-                {mentions.list}
-                <input
-                  ref={commentInputRef}
-                  placeholder="Написать комментарий..."
-                  maxLength={2000}
-                  disabled={sending}
-                  value={comment}
-                  onChange={(e) => {
-                    setComment(e.target.value);
-                    mentions.detect();
-                  }}
-                  onSelect={mentions.detect}
-                  onKeyDown={mentions.onKeyDown}
-                />
+                  ))
+                )}
               </div>
-              <EmojiPicker inputRef={commentInputRef} value={comment} onChange={setComment} size={20} />
-              {comment.trim() && (
-                <button className="icon-btn icon-btn--sm comment-form__send" title="Отправить">
-                  <SendIcon size={20} />
-                </button>
-              )}
-            </form>
+
+              <form className="viewer__form" onSubmit={submit}>
+                <MeAvatar size={32} />
+                <div className="viewer__input">
+                  {mentions.list}
+                  <input
+                    ref={commentInputRef}
+                    placeholder="Написать комментарий..."
+                    maxLength={2000}
+                    disabled={sending}
+                    value={comment}
+                    onChange={(e) => {
+                      setComment(e.target.value);
+                      mentions.detect();
+                    }}
+                    onSelect={mentions.detect}
+                    onKeyDown={mentions.onKeyDown}
+                  />
+                </div>
+                <EmojiPicker
+                  inputRef={commentInputRef}
+                  value={comment}
+                  onChange={setComment}
+                  size={20}
+                />
+                {comment.trim() && (
+                  <button
+                    className="icon-btn icon-btn--sm comment-form__send"
+                    title="Отправить"
+                  >
+                    <SendIcon size={20} />
+                  </button>
+                )}
+              </form>
             </>
           )}
         </aside>
@@ -413,8 +465,11 @@ export default function PhotoViewer({
 
       {sharing && (
         <ShareModal
-          // Старый аватар без записи в «Фото» — делимся страницей владельца
-          shared={photo.readOnly ? { type: "profile", id: owner.id } : { type: "photo", id: photo.id }}
+          shared={
+            photo.readOnly
+              ? { type: "profile", id: owner.id }
+              : { type: "photo", id: photo.id }
+          }
           link={href}
           onClose={() => setSharing(false)}
         />

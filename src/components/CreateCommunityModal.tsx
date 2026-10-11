@@ -5,23 +5,58 @@ import { useCommunities } from "../context/CommunitiesContext";
 import type { Community, CommunityAccess, CommunityKind } from "../types";
 
 export const COMMUNITY_CATEGORIES = [
-  "Бизнес", "Блог", "Видеоигры", "Еда и рецепты", "Искусство", "Кино", "Красота", "Музыка",
-  "Наука", "Новости и СМИ", "Образование", "Путешествия", "Развлечения", "Спорт", "Технологии",
-  "Творчество", "Хобби", "Юмор", "Другое",
+  "Бизнес",
+  "Блог",
+  "Видеоигры",
+  "Еда и рецепты",
+  "Искусство",
+  "Кино",
+  "Красота",
+  "Музыка",
+  "Наука",
+  "Новости и СМИ",
+  "Образование",
+  "Путешествия",
+  "Развлечения",
+  "Спорт",
+  "Технологии",
+  "Творчество",
+  "Хобби",
+  "Юмор",
+  "Другое",
 ];
 
 const KINDS: { id: CommunityKind; title: string; text: string }[] = [
-  { id: "group", title: "Группа", text: "Для общения, обсуждений и совместных интересов. Участники могут писать на стене" },
-  { id: "page", title: "Публичная страница", text: "Для новостей, блога или бренда. Пишут только администраторы, остальные — подписчики" },
+  {
+    id: "group",
+    title: "Группа",
+    text: "Для общения, обсуждений и совместных интересов. Участники могут писать на стене",
+  },
+  {
+    id: "page",
+    title: "Публичная страница",
+    text: "Для новостей, блога или бренда. Пишут только администраторы, остальные — подписчики",
+  },
 ];
 
-export const ACCESS_OPTIONS: { id: CommunityAccess; title: string; text: string }[] = [
+export const ACCESS_OPTIONS: {
+  id: CommunityAccess;
+  title: string;
+  text: string;
+}[] = [
   { id: "open", title: "Открытая", text: "Вступить может любой" },
-  { id: "closed", title: "Закрытая", text: "Вступают по заявке, записи видят только участники" },
-  { id: "private", title: "Частная", text: "Только по приглашению, группу не найти в поиске" },
+  {
+    id: "closed",
+    title: "Закрытая",
+    text: "Вступают по заявке, записи видят только участники",
+  },
+  {
+    id: "private",
+    title: "Частная",
+    text: "Только по приглашению, группу не найти в поиске",
+  },
 ];
 
-// «Создание сообщества» как в VK: тип → название, тематика, доступ
 export default function CreateCommunityModal({
   onClose,
   onCreated,
@@ -43,7 +78,12 @@ export default function CreateCommunityModal({
     setSaving(true);
     setError("");
     try {
-      const community = await createCommunity({ name: name.trim(), kind, access, category });
+      const community = await createCommunity({
+        name: name.trim(),
+        kind,
+        access,
+        category,
+      });
       await reload();
       onCreated(community);
     } catch (err) {
@@ -68,11 +108,24 @@ export default function CreateCommunityModal({
         </>
       }
     >
-      <form id="create-community" className="media-form" onSubmit={submit} noValidate>
+      <form
+        id="create-community"
+        className="media-form"
+        onSubmit={submit}
+        noValidate
+      >
         <div className="kind-cards">
           {KINDS.map((k) => (
-            <label key={k.id} className={`kind-card ${kind === k.id ? "kind-card--on" : ""}`}>
-              <input type="radio" name="kind" checked={kind === k.id} onChange={() => setKind(k.id)} />
+            <label
+              key={k.id}
+              className={`kind-card ${kind === k.id ? "kind-card--on" : ""}`}
+            >
+              <input
+                type="radio"
+                name="kind"
+                checked={kind === k.id}
+                onChange={() => setKind(k.id)}
+              />
               <span className="kind-card__title">{k.title}</span>
               <span className="kind-card__text">{k.text}</span>
             </label>
@@ -90,13 +143,21 @@ export default function CreateCommunityModal({
               setName(e.target.value);
               setError("");
             }}
-            placeholder={kind === "page" ? "Например, «Новости района»" : "Например, «Фотографы Москвы»"}
+            placeholder={
+              kind === "page"
+                ? "Например, «Новости района»"
+                : "Например, «Фотографы Москвы»"
+            }
           />
         </label>
 
         <label className="media-form__label">
           Тематика
-          <select className="field field--select" value={category} onChange={(e) => setCategory(e.target.value)}>
+          <select
+            className="field field--select"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
             <option value="">Не выбрана</option>
             {COMMUNITY_CATEGORIES.map((c) => (
               <option key={c}>{c}</option>
@@ -110,7 +171,12 @@ export default function CreateCommunityModal({
             <div className="access-options">
               {ACCESS_OPTIONS.map((o) => (
                 <label key={o.id} className="access-option">
-                  <input type="radio" name="access" checked={access === o.id} onChange={() => setAccess(o.id)} />
+                  <input
+                    type="radio"
+                    name="access"
+                    checked={access === o.id}
+                    onChange={() => setAccess(o.id)}
+                  />
                   <span>
                     <span className="access-option__title">{o.title}</span>
                     <span className="access-option__text">{o.text}</span>

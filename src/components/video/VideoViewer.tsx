@@ -31,8 +31,6 @@ import { formatCount, formatDate } from "../../utils";
 import { viewsLabel } from "./format";
 import type { Comment, Video } from "../../types";
 
-// Просмотр видео как в VK: плеер, под ним название и действия, справа комментарии.
-// video — уже загруженный объект (из списка) или null — тогда грузим по id
 export default function VideoViewer({
   id,
   video: initial,
@@ -63,7 +61,6 @@ export default function VideoViewer({
   const commentsRef = useRef<HTMLDivElement>(null);
   useScrollLock();
 
-  // Свежие данные с сервера заменяют то, что пришло из списка
   const [seen, setSeen] = useState<Video | null>(null);
   if (fresh.data && fresh.data !== seen) {
     setSeen(fresh.data);
@@ -76,7 +73,6 @@ export default function VideoViewer({
     library.patch(id, data);
   };
 
-  // Просмотр засчитываем один раз при открытии
   useEffect(() => {
     let cancelled = false;
     api.viewVideo(id).then(
@@ -218,9 +214,17 @@ export default function VideoViewer({
                   <button
                     className={`pill ${isSaved("video", video.id) ? "pill--saved" : ""}`}
                     onClick={() => toggleBookmark("video", video.id)}
-                    title={isSaved("video", video.id) ? "Удалить из закладок" : "В закладки"}
+                    title={
+                      isSaved("video", video.id)
+                        ? "Удалить из закладок"
+                        : "В закладки"
+                    }
                   >
-                    {isSaved("video", video.id) ? <BookmarkFilledIcon /> : <BookmarkIcon />}
+                    {isSaved("video", video.id) ? (
+                      <BookmarkFilledIcon />
+                    ) : (
+                      <BookmarkIcon />
+                    )}
                   </button>
                   <button
                     className={`btn btn--neutral video-viewer__add ${added ? "video-viewer__add--on" : ""}`}

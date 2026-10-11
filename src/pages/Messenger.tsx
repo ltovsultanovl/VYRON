@@ -46,7 +46,6 @@ import {
 
 type Folder = "Все" | "Непрочитанные" | "Архив";
 
-// Подсветка найденного текста в сообщении
 function Highlighted({ text, query }: { text: string; query: string }) {
   if (!query) return <>{text}</>;
   const lower = text.toLowerCase();
@@ -63,7 +62,6 @@ function Highlighted({ text, query }: { text: string; query: string }) {
 
 const matchesQuery = (text: string | undefined, q: string) => !!text && !!q && text.toLowerCase().includes(q.toLowerCase());
 
-// ---------- Данные для окна мессенджера (уже в виде для показа) ----------
 export type MessageState = "pending" | "sent" | "read" | "failed";
 
 export interface ChatAttachment {
@@ -73,7 +71,6 @@ export interface ChatAttachment {
   url: string | null;
 }
 
-// R — исходное сообщение (строка из базы): возвращается в onRetry / onDelete
 export interface ViewMessage<R = unknown> {
   id: number | string;
   out: boolean;
@@ -86,7 +83,7 @@ export interface ViewMessage<R = unknown> {
   state?: MessageState;
   deletable?: boolean;
   canDeleteForAll?: boolean;
-  listened?: boolean; // голосовое: прослушано получателем
+  listened?: boolean;
   raw: R;
 }
 
@@ -97,14 +94,13 @@ export interface ViewDialog<R = unknown> {
   pinned?: boolean;
   archived?: boolean;
   markedUnread?: boolean;
-  blocked?: "byMe" | "me"; // я заблокировал собеседника / он заблокировал меня
+  blocked?: "byMe" | "me";
   unread: number;
   typing?: boolean;
   time: string;
   messages: ViewMessage<R>[];
 }
 
-// Статус своего сообщения как в VK: часики → ✓ отправлено → ✓✓ прочитано (синие), ! — ошибка
 const STATUS_LABELS: Record<MessageState, string> = {
   pending: "Отправляется",
   sent: "Отправлено",
@@ -112,7 +108,7 @@ const STATUS_LABELS: Record<MessageState, string> = {
   failed: "Не отправлено",
 };
 
-export function MessageStatus({ state }: { state?: MessageState }) {
+function MessageStatus({ state }: { state?: MessageState }) {
   if (!state || !STATUS_LABELS[state]) return null;
   return (
     <span
@@ -164,18 +160,15 @@ export function MessageStatus({ state }: { state?: MessageState }) {
   );
 }
 
-// Страница собеседника: человека или сообщества
 const personHref = (person: ChatPeer) =>
   person.isCommunity ? `#club/${person.communityId}` : `#user/${person.id}`;
 
-// ---------- Действия с сообщением: «⋯» при наведении → Копировать / Удалить ----------
 function MessageActions({ message, onDeleteClick }: { message: ViewMessage; onDeleteClick: (() => void) | null }) {
   const showSnackbar = useSnackbar();
   const menu = useDropdown();
   const [up, setUp] = useState(true);
 
   const toggle = (e: MouseEvent<HTMLButtonElement>) => {
-    // У нижних сообщений меню открываем вверх, у верхних — вниз, чтобы не обрезалось
     setUp(e.currentTarget.getBoundingClientRect().top > 220);
     menu.toggle();
   };
@@ -230,7 +223,6 @@ function MessageActions({ message, onDeleteClick }: { message: ViewMessage; onDe
   );
 }
 
-// «Удалить сообщение?» с галочкой «Удалить для всех», как в VK
 function DeleteMessageModal({
   canDeleteForAll,
   onConfirm,
@@ -281,7 +273,6 @@ function DeleteMessageModal({
   );
 }
 
-// Фото на весь экран по клику; закрывается кликом или Esc
 function Lightbox({ url, onClose }: { url: string; onClose: () => void }) {
   useScrollLock();
   useEffect(() => {
@@ -301,13 +292,11 @@ function Lightbox({ url, onClose }: { url: string; onClose: () => void }) {
   );
 }
 
-// Как часы: секунды вниз (таймер записи и длительность голосового совпадают)
 const formatDuration = (sec: number) => {
   const s = Math.max(0, Math.floor(sec || 0));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 };
 
-// Скорость голосовых общая для всех и запоминается, как в VK: 1x → 1.5x → 2x
 const VOICE_RATES = [1, 1.5, 2];
 let voiceRate = (() => {
   try {
@@ -317,11 +306,8 @@ let voiceRate = (() => {
     return 1;
   }
 })();
-// Одновременно играет только одно голосовое
 let playingVoice: HTMLAudioElement | null = null;
 
-// Голосовое сообщение как в VK: ▶, волна с прогрессом (тап или протяжка пальцем — перемотка), время,
-// скорость и синяя точка «не прослушано». Закончилось — само включается следующее непрослушанное
 function VoicePlayer({
   url,
   meta,
@@ -345,13 +331,11 @@ function VoicePlayer({
   const [failed, setFailed] = useState<false | "load" | "format">(false);
   const playedRef = useRef<HTMLDivElement>(null);
   const duration = meta?.duration || 0;
-  // Волна мягче: каждый столбик сглаживаем с соседями, чтобы не было резких зубцов
   const bars = useMemo(() => {
     const raw: number[] = meta?.waveform?.length ? meta.waveform : Array(48).fill(20);
     return raw.map((h, i) => ((raw[i - 1] ?? h) + 2 * h + (raw[i + 1] ?? h)) / 4);
   }, [meta?.waveform]);
 
-  // Закрашенная часть волны едет плавно, каждый кадр, а не прыжками раз в четверть секунды
   const paint = useCallback(
     (seconds: number) => {
       const el = playedRef.current;
@@ -396,13 +380,11 @@ function VoicePlayer({
     try {
       localStorage.setItem("voiceRate", String(voiceRate));
     } catch {
-      /* без сохранения — только до перезагрузки */
     }
     setRate(voiceRate);
     if (audioRef.current) audioRef.current.playbackRate = voiceRate;
   };
 
-  // Следующее непрослушанное входящее голосовое в этой переписке
   const playNext = () => {
     const root = rootRef.current;
     const all = [...(root?.closest(".chat__body")?.querySelectorAll<HTMLElement>(".voice") ?? [])];
@@ -480,7 +462,6 @@ function VoicePlayer({
             if (!out) playNext();
           }}
           onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
-          // Код 4 — браузер не умеет этот формат (старые голосовые WebM на iPhone)
           onError={(e) => setFailed(e.currentTarget.error?.code === 4 ? "format" : "load")}
         />
       )}
@@ -488,15 +469,12 @@ function VoicePlayer({
   );
 }
 
-// «Исполнитель - Название.mp3» → { artist, title }, как подписывает треки VK
 const parseTrackName = (name?: string | null) => {
   const base = (name || "Аудиозапись").replace(/\.[a-z0-9]{2,4}$/i, "").replace(/_/g, " ").trim();
   const [artist, ...rest] = base.split(/\s+[-–—]\s+/);
   return rest.length ? { artist: artist.trim(), title: rest.join(" – ").trim() } : { artist: "", title: base };
 };
 
-// Музыка в сообщении как в VK: круглая ▶, название, исполнитель и длительность.
-// Играет через общий плеер сайта — видно в шапке, музыка не прерывается при переходе в другой раздел
 function AudioAttachment({ attachment, pending, trackId }: { attachment: ChatAttachment; pending?: boolean; trackId: number }) {
   const player = usePlayer();
   const { url } = attachment;
@@ -504,7 +482,6 @@ function AudioAttachment({ attachment, pending, trackId }: { attachment: ChatAtt
   const [duration, setDuration] = useState(0);
   const [failed, setFailed] = useState(false);
 
-  // Длительность — из заголовка файла, без скачивания всей песни
   useEffect(() => {
     if (!url) return;
     const probe = new Audio();
@@ -549,7 +526,6 @@ function AudioAttachment({ attachment, pending, trackId }: { attachment: ChatAtt
   );
 }
 
-// Фото, видео или музыка в сообщении; пока нет ссылки — заглушка с крутилкой
 function Attachment({
   attachment,
   pending,
@@ -564,8 +540,6 @@ function Attachment({
   voice?: { out: boolean; listened: boolean; onListened: () => void };
 }) {
   const { type, url } = attachment;
-  // Нет сети или ссылка устарела — показываем понятную заглушку вместо пустого пузыря.
-  // Хук — до любых return: порядок хуков не должен зависеть от типа вложения
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   if (type === "audio")
     return <AudioAttachment attachment={attachment} pending={pending} trackId={trackId} />;
@@ -611,7 +585,6 @@ function Attachment({
   );
 }
 
-// «печатает» с тремя точками, которые плавно подпрыгивают волной — как в VK
 function TypingDots() {
   return (
     <span className="typing-dots" aria-hidden="true">
@@ -629,8 +602,6 @@ const Typing = ({ label = "печатает" }: { label?: string }) => (
   </span>
 );
 
-// Одно сообщение. Мемоизировано: набор текста, «печатает…» и новые сообщения
-// не перерисовывают уже показанные (если сам объект сообщения не изменился)
 const MessageItem = memo(function MessageItem({
   message: m,
   day,
@@ -644,15 +615,14 @@ const MessageItem = memo(function MessageItem({
 }: {
   message: ViewMessage<unknown>;
   onListened?: (message: ViewMessage<unknown>) => void;
-  highlight?: string; // что подсветить (поиск по чату)
-  current?: boolean; // это совпадение сейчас выбрано
+  highlight?: string;
+  current?: boolean;
   day: string | null;
   deletable: boolean;
   onZoom: (url: string) => void;
   onAskDelete: (message: ViewMessage<unknown>) => void;
   onRetry: (message: ViewMessage<unknown>) => void;
 }) {
-  // Фото и видео показываем как в VK: во всю ширину пузыря, а без текста — вовсе без пузыря
   const visual = m.attachment?.type === "image" ? "image" : m.attachment?.type === "video" ? "video" : null;
   return (
     <div className={`chat__item ${current ? "chat__item--current" : ""}`} data-msg-id={m.id}>
@@ -667,7 +637,7 @@ const MessageItem = memo(function MessageItem({
               pending={m.state === "pending"}
               onOpen={onZoom}
               voice={{ out: m.out, listened: m.listened !== false, onListened: () => onListened?.(m) }}
-              trackId={-Math.abs(Number(m.id) || 1)} // свой номер для плеера, не пересекается с треками раздела «Музыка»
+              trackId={-Math.abs(Number(m.id) || 1)}
             />
           )}
           {m.text && (
@@ -694,8 +664,7 @@ const MessageItem = memo(function MessageItem({
   );
 });
 
-// «⋯» в шапке чата: закрепить, отметить непрочитанным, архив
-export interface ChatMenuActions {
+interface ChatMenuActions {
   togglePin: (id: string) => void;
   toggleArchive: (id: string) => void;
   markUnread: (id: string) => void;
@@ -713,15 +682,14 @@ function ChatMenu({
 }: {
   dialog: ViewDialog<unknown>;
   actions?: ChatMenuActions;
-  onLeave?: () => void; // на телефоне после «непрочитанным» / «в архив» возвращаемся к списку
-  inList?: boolean; // «⋯» у чата в списке: меню поверх списка, чтобы его не обрезала прокрутка
+  onLeave?: () => void;
+  inList?: boolean;
 }) {
   const menu = useDropdown();
   const [confirmBlock, setConfirmBlock] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [place, setPlace] = useState<React.CSSProperties>();
-  // Меню из списка висит поверх страницы — при прокрутке закрываем, чтобы оно не отрывалось от чата
   const { open, close } = menu;
   useEffect(() => {
     if (!inList || !open) return;
@@ -831,11 +799,6 @@ function ChatMenu({
   );
 }
 
-// Окно мессенджера.
-// dialog: { id, person: { name, color, avatar?, online }, unread, time, typing?,
-//           messages: [{ id, out, text, summary?, attachment?: { type, url, name? }, time, day?,
-//                        state?: pending|sent|read|failed }] }
-// onSend(dialogId, text, file?, voice?) — file: фото, видео или музыка; voice: { duration, waveform }
 export default function Messenger<R>({
   dialogs,
   activeId,
@@ -858,13 +821,10 @@ export default function Messenger<R>({
   onListened?: (message: ViewMessage<R>) => void;
   onDelete?: (message: ViewMessage<R>, forAll: boolean) => void;
   emptyText?: string;
-  // На телефоне видно что-то одно: список чатов или открытый чат. true — сразу чат
-  // (пришли по «Написать сообщение» со страницы человека)
   startInChat?: boolean;
   chatActions?: ChatMenuActions;
 }) {
   const [chatOpen, setChatOpen] = useState(startInChat);
-  // Колбэки для сообщений — постоянные, чтобы мемоизированные сообщения не перерисовывались
   const onRetryRef = useRef(onRetry);
   useEffect(() => {
     onRetryRef.current = onRetry;
@@ -876,13 +836,11 @@ export default function Messenger<R>({
   });
   const listenedCb = useCallback((m: ViewMessage<unknown>) => onListenedRef.current?.(m as ViewMessage<R>), []);
   const askDelete = useCallback((m: ViewMessage<unknown>) => setToDelete(m as ViewMessage<R>), []);
-  const [toDelete, setToDelete] = useState<ViewMessage<R> | null>(null); // сообщение, для которого открыто «Удалить?»
+  const [toDelete, setToDelete] = useState<ViewMessage<R> | null>(null);
   const [text, setText] = useState("");
   const [folder, setFolder] = useState<Folder>("Все");
-  // Поиск по открытому чату: запрос и выбранное совпадение
   const [search, setSearch] = useState<{ q: string; currentId: number | string | null } | null>(null);
   const [query, setQuery] = useState("");
-  // Выбранное, ещё не отправленное вложение
   const [attachment, setAttachment] = useState<{ file: File; url: string; type: AttachmentType } | null>(null);
   const [zoomUrl, setZoomUrl] = useState<string | null>(null);
   const showSnackbar = useSnackbar();
@@ -903,7 +861,6 @@ export default function Messenger<R>({
       : !d.archived && (folder !== "Непрочитанные" || d.unread > 0 || !!d.markedUnread);
   const q = query.trim();
   const visible = dialogs.filter((d) => inFolder(d) && d.person.name.toLowerCase().includes(q.toLowerCase()));
-  // Поиск в списке находит и сами сообщения во всех переписках (новые сверху)
   const messageHits =
     q.length >= 2
       ? dialogs
@@ -912,7 +869,6 @@ export default function Messenger<R>({
           .slice(0, 50)
       : [];
 
-  // Совпадения в открытом чате; выбранное — по id (стрелки ↑ ↓ ходят по ним)
   const chatMatches = search?.q ? (active?.messages ?? []).filter((m) => matchesQuery(m.text, search.q)) : [];
   const currentIndex = chatMatches.findIndex((m) => m.id === search?.currentId);
   const step = (dir: -1 | 1) => {
@@ -922,14 +878,12 @@ export default function Messenger<R>({
     setSearch((st) => (st ? { ...st, currentId: next.id } : st));
   };
 
-  // Сменился открытый чат — поиск закрываем (кроме перехода из результатов поиска)
   const [searchChat, setSearchChat] = useState(active?.id);
   if (searchChat !== active?.id) {
     setSearchChat(active?.id);
     if (search && !search.currentId) setSearch(null);
   }
 
-  // Выбранное совпадение — по центру экрана
   useEffect(() => {
     if (!search?.currentId) return;
     const el = bodyRef.current?.querySelector(`[data-msg-id="${CSS.escape(String(search.currentId))}"]`);
@@ -942,7 +896,6 @@ export default function Messenger<R>({
     setSearch({ q, currentId: messageId });
   };
 
-  // Выбрали файл (кнопкой, перетаскиванием или вставкой) — проверяем и показываем превью
   const choose = (file: File | undefined) => {
     if (!file) return;
     if (active?.textOnly) {
@@ -974,7 +927,6 @@ export default function Messenger<R>({
       return null;
     });
 
-  // Меню скрепки как в VK: Фото / Видео / Музыка — у каждого пункта свой выбор файла
   const attachMenu = useDropdown();
   const photoPicker = useFilePicker({
     accept: "image/*",
@@ -995,15 +947,12 @@ export default function Messenger<R>({
   ];
   const [dragging, dropProps] = useFileDrop(([file]) => choose(file));
 
-  // ---------- Голосовое: 🎤 → запись → 🗑 или «отправить» ----------
   const finishVoiceRef = useRef<(() => Promise<void>) | null>(null);
   const recorder = useVoiceRecorder({
     maxSeconds: 300,
     onLimit: () => finishVoiceRef.current?.(),
   });
 
-  // Режим записи, как в VK: "hold" — держим кнопку (влево — отмена, вверх — закрепить),
-  // "locked" — запись закреплена (пауза, прослушать, отправить), "preview" — слушаем перед отправкой
   const [voiceMode, setVoiceMode] = useState<"hold" | "locked" | null>(null);
   const [slide, setSlide] = useState({ dx: 0, dy: 0 });
   const [preview, setPreview] = useState<{ blob: Blob; url: string; duration: number; waveform: number[] } | null>(null);
@@ -1015,7 +964,7 @@ export default function Messenger<R>({
     }
     try {
       await recorder.start();
-      navigator.vibrate?.(15); // лёгкий отклик на Android, как в приложении VK
+      navigator.vibrate?.(15);
       return true;
     } catch (err) {
       const e = err as DOMException;
@@ -1031,7 +980,6 @@ export default function Messenger<R>({
     }
   };
 
-  // Нажали на микрофон: держим — запись с удержанием; короткое нажатие — запись закрепляется
   const onMicDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0 || recorder.recording) return;
     e.preventDefault();
@@ -1049,12 +997,10 @@ export default function Messenger<R>({
       const dy = Math.min(0, ev.clientY - hold.y);
       setSlide({ dx, dy });
       if (dx < -100) {
-        // Сдвинули влево — отмена
         stopTracking();
         recorder.cancel();
         setVoiceMode(null);
       } else if (dy < -70) {
-        // Сдвинули вверх — запись закреплена, можно отпустить
         stopTracking();
         setVoiceMode("locked");
       }
@@ -1062,7 +1008,6 @@ export default function Messenger<R>({
     const up = () => {
       stopTracking();
       hold.released = true;
-      // Короткое нажатие или ждали разрешения на микрофон — запись без удержания
       if (!hold.started || Date.now() - hold.t < 300) setVoiceMode("locked");
       else finishVoice();
     };
@@ -1087,7 +1032,6 @@ export default function Messenger<R>({
     });
   };
 
-  // На паузе — «прослушать»: запись завершается, её можно послушать и отправить или удалить
   const previewVoice = async () => {
     const result = await recorder.stop();
     setVoiceMode(null);
@@ -1117,7 +1061,6 @@ export default function Messenger<R>({
   const finishVoice = async () => {
     setVoiceMode(null);
     if (preview) {
-      // Отправляем прослушанную запись
       sendVoice(preview);
       URL.revokeObjectURL(preview.url);
       setPreview(null);
@@ -1127,7 +1070,6 @@ export default function Messenger<R>({
   };
   finishVoiceRef.current = finishVoice;
 
-  // Переключились на другой чат посреди записи — запись выбрасываем
   const { cancel: cancelVoice } = recorder;
   useEffect(
     () => () => {
@@ -1141,7 +1083,6 @@ export default function Messenger<R>({
     [active?.id, cancelVoice],
   );
 
-  // Освобождаем превью, когда окно закрывается
   useEffect(
     () => () => {
       if (attachment) URL.revokeObjectURL(attachment.url);
@@ -1155,14 +1096,13 @@ export default function Messenger<R>({
     if ((!value && !attachment) || !active) return;
     onSend(active.id, value, attachment?.file ?? null);
     setText("");
-    setAttachment(null); // превью освободит эффект выше; у отправленного сообщения своя ссылка
+    setAttachment(null);
   };
 
   const canSend = text.trim() || attachment;
 
   return (
     <div className={`card messenger ${chatOpen ? "messenger--chat" : ""}`}>
-      {/* ---------- Список чатов ---------- */}
       <div className="im-list">
         <div className="im-list__head">
           <label className="search">
@@ -1248,7 +1188,6 @@ export default function Messenger<R>({
                   </span>
                 </span>
               </button>
-              {/* Те же действия, что в «⋯» открытого чата */}
               <ChatMenu dialog={d} actions={chatActions} inList />
               </div>
             );
@@ -1283,14 +1222,12 @@ export default function Messenger<R>({
         </div>
       </div>
 
-      {/* ---------- Окно чата ---------- */}
       {active ? (
         <div className={`chat ${dragging ? "chat--drag" : ""}`} {...dropProps}>
           <div className="chat__head">
             <button type="button" className="icon-btn chat__back" title="Назад к чатам" onClick={() => setChatOpen(false)}>
               <ChevronLeftIcon size={24} />
             </button>
-            {/* Аватар и имя ведут на страницу собеседника, как в VK */}
             <a
               href={personHref(active.person)}
               className="chat__person"
@@ -1315,7 +1252,6 @@ export default function Messenger<R>({
               <div
                 className={`chat__status ${active.person.online || active.typing ? "chat__status--online" : ""}`}
               >
-                {/* key — при смене «в сети» ↔ «печатает» статус плавно проявляется, а не прыгает */}
                 <span key={active.typing ? "typing" : active.person.online ? "online" : "away"} className="status-swap">
                   {active.person.isCommunity
                     ? "Сообщество"
@@ -1337,14 +1273,13 @@ export default function Messenger<R>({
             />
           </div>
 
-          {/* ---------- Поиск по сообщениям этого чата ---------- */}
           {search && (
             <form
               className="chat-search"
               role="search"
               onSubmit={(e) => {
                 e.preventDefault();
-                step(-1); // Enter — к предыдущему (более старому) совпадению
+                step(-1);
               }}
             >
               <SearchIcon size={18} />
@@ -1356,7 +1291,6 @@ export default function Messenger<R>({
                 onChange={(e) => {
                   const value = e.target.value;
                   const found = (active.messages ?? []).filter((m) => matchesQuery(m.text, value.trim()));
-                  // Сразу встаём на самое новое совпадение
                   setSearch({ q: value.trim(), currentId: found.at(-1)?.id ?? null });
                 }}
                 onKeyDown={(e) => e.key === "Escape" && setSearch(null)}
@@ -1451,7 +1385,6 @@ export default function Messenger<R>({
               )}
             </div>
           ) : preview ? (
-            /* Прослушать перед отправкой */
             <div className="chat__composer chat__composer--recording">
               <button type="button" className="icon-btn chat__send voice-rec__trash" title="Удалить запись" onClick={discardVoice}>
                 <TrashIcon size={22} />
@@ -1464,7 +1397,6 @@ export default function Messenger<R>({
               </button>
             </div>
           ) : voiceMode === "hold" ? (
-            /* Держим кнопку: влево — отмена, вверх — закрепить */
             <div className="chat__composer chat__composer--recording voice-rec voice-rec--hold">
               <div className="recording" role="status">
                 <span className="recording__dot" />
@@ -1485,7 +1417,6 @@ export default function Messenger<R>({
               </span>
             </div>
           ) : recorder.recording || voiceMode === "locked" ? (
-            /* Запись закреплена: удалить, пауза / продолжить, прослушать, отправить */
             <form
               className="chat__composer chat__composer--recording"
               onSubmit={(e) => {
@@ -1610,7 +1541,6 @@ export default function Messenger<R>({
                   onPointerDown={onMicDown}
                   onContextMenu={(e) => e.preventDefault()}
                   onKeyDown={(e) => {
-                    // С клавиатуры — запись без удержания
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       startVoice().then((ok) => ok && setVoiceMode("locked"));

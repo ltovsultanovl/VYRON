@@ -12,7 +12,7 @@ import {
 } from "./Icons";
 import type { Navigate } from "../types";
 
-export interface MenuItem {
+interface MenuItem {
   view?: string;
   Icon: Icon;
   label: string;
@@ -29,15 +29,13 @@ export const NAV_GROUPS: MenuItem[][] = [
     { view: "music", Icon: MusicIcon, label: "Музыка" },
     { view: "video", Icon: VideoIcon, label: "Видео" },
   ],
-  [
-    { view: "bookmarks", Icon: BookmarkIcon, label: "Закладки" },
-  ],
+  [{ view: "bookmarks", Icon: BookmarkIcon, label: "Закладки" }],
 ];
 
-// counters — числа у пунктов по их view: { messages: 3, friends: 1 }
-// Подразделы подсвечивают свой раздел: редактирование — профиль, сообщество — «Сообщества»
 export const activeSection = (view: string) =>
-  ({ edit: "profile", club: "communities" } as Record<string, string>)[view] ?? view;
+  (({ edit: "profile", club: "communities" }) as Record<string, string>)[
+    view
+  ] ?? view;
 
 export default function Sidebar({
   view,
@@ -48,7 +46,6 @@ export default function Sidebar({
   onNavigate: Navigate;
   counters?: Record<string, number>;
 }) {
-  // Редактирование профиля — подраздел профиля
   const activeView = activeSection(view);
 
   const renderItem = ({ view: target, Icon, label }: MenuItem) => {

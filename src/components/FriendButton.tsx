@@ -5,9 +5,15 @@ import { useDropdown } from "../hooks";
 import { ChevronDownIcon } from "./Icons";
 import type { Person } from "../types";
 
-// Кнопка дружбы с человеком: добавить / отменить заявку / принять / удалить из друзей
-export default function FriendButton({ person, className = "" }: { person: Person; className?: string }) {
-  const { relationTo, sendRequest, cancel, accept, decline, remove } = useFriends();
+export default function FriendButton({
+  person,
+  className = "",
+}: {
+  person: Person;
+  className?: string;
+}) {
+  const { relationTo, sendRequest, cancel, accept, decline, remove } =
+    useFriends();
   const [busy, setBusy] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const menu = useDropdown();
@@ -26,7 +32,11 @@ export default function FriendButton({ person, className = "" }: { person: Perso
         <button className="btn" onClick={act(accept)} disabled={busy}>
           Принять заявку
         </button>
-        <button className="btn btn--neutral" onClick={act(decline)} disabled={busy}>
+        <button
+          className="btn btn--neutral"
+          onClick={act(decline)}
+          disabled={busy}
+        >
           Отклонить
         </button>
       </span>
@@ -35,17 +45,24 @@ export default function FriendButton({ person, className = "" }: { person: Perso
 
   if (relation === "none") {
     return (
-      <button className={`btn ${className}`} onClick={act(sendRequest)} disabled={busy}>
+      <button
+        className={`btn ${className}`}
+        onClick={act(sendRequest)}
+        disabled={busy}
+      >
         Добавить в друзья
       </button>
     );
   }
 
-  // Друг или заявка отправлена — нейтральная кнопка с меню
   const label = relation === "friend" ? "У вас в друзьях" : "Заявка отправлена";
   return (
     <div className={`friend-menu ${className}`} ref={menu.ref}>
-      <button className="btn btn--neutral" onClick={menu.toggle} disabled={busy}>
+      <button
+        className="btn btn--neutral"
+        onClick={menu.toggle}
+        disabled={busy}
+      >
         {label}
         <ChevronDownIcon size={16} />
       </button>

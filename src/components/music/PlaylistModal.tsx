@@ -2,7 +2,6 @@ import { useState } from "react";
 import Modal from "../Modal";
 import type { Playlist } from "../../types";
 
-// Создание и редактирование плейлиста
 export default function PlaylistModal({
   playlist,
   onSave,

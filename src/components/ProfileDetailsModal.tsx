@@ -15,9 +15,9 @@ import type { ReactNode } from "react";
 import { INTERESTS, formatBirthday, relationLabel } from "../profile";
 import type { Profile } from "../types";
 
-const join = (...parts: (string | null | undefined | false)[]) => parts.filter(Boolean).join(", ");
+const join = (...parts: (string | null | undefined | false)[]) =>
+  parts.filter(Boolean).join(", ");
 
-// Подробная информация о любом пользователе; onEdit — только для своей страницы
 export default function ProfileDetailsModal({
   profile: p,
   onClose,
@@ -37,42 +37,42 @@ export default function ProfileDetailsModal({
     (w.from || w.to) && `${w.from || "…"}–${w.to || "н. в."}`,
   );
 
-  // Показываем только заполненные поля — как в VK
   const main = (
     [
-    [GiftIcon, "День рождения", formatBirthday(p)],
-    [MapPinIcon, "Город", c.city],
-    [HomeIcon, "Родной город", p.hometown],
-    [GlobeIcon, "Языки", p.languages],
-    [HeartIcon, "Семейное положение", relationLabel(p.gender, p.relation)],
-    [
-      EducationIcon,
-      "Образование",
-      join(e.university, e.faculty, e.graduation && `${e.graduation} г.`),
-    ],
-    [EducationIcon, "Школа", e.school],
-    [BriefcaseIcon, "Карьера", career],
-    [PhoneIcon, "Телефон", join(c.phone, c.phone2)],
-    [
-      LinkIcon,
-      "Сайт",
-      site && (
-        <a
-          className="link"
-          href={/^https?:\/\//.test(site) ? site : `https://${site}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {site}
-        </a>
-      ),
-    ],
+      [GiftIcon, "День рождения", formatBirthday(p)],
+      [MapPinIcon, "Город", c.city],
+      [HomeIcon, "Родной город", p.hometown],
+      [GlobeIcon, "Языки", p.languages],
+      [HeartIcon, "Семейное положение", relationLabel(p.gender, p.relation)],
+      [
+        EducationIcon,
+        "Образование",
+        join(e.university, e.faculty, e.graduation && `${e.graduation} г.`),
+      ],
+      [EducationIcon, "Школа", e.school],
+      [BriefcaseIcon, "Карьера", career],
+      [PhoneIcon, "Телефон", join(c.phone, c.phone2)],
+      [
+        LinkIcon,
+        "Сайт",
+        site && (
+          <a
+            className="link"
+            href={/^https?:\/\//.test(site) ? site : `https://${site}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {site}
+          </a>
+        ),
+      ],
     ] as [Icon, string, ReactNode][]
   ).filter(([, , value]) => value);
 
-  const interests = INTERESTS.map(([key, label]) => [label, p.interests[key]]).filter(
-    ([, value]) => value?.trim(),
-  );
+  const interests = INTERESTS.map(([key, label]) => [
+    label,
+    p.interests[key],
+  ]).filter(([, value]) => value?.trim());
 
   return (
     <Modal

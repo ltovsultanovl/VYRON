@@ -4,50 +4,59 @@ import { useDropdown, useStoredState } from "../hooks";
 
 const RECENT_LIMIT = 24;
 
-// Разделы как в VK. Наборы — обычные эмодзи Unicode, отображаются шрифтом системы
 const CATEGORIES = [
   {
     id: "smiles",
     icon: "😀",
     label: "Смайлы",
-    emoji: "😀 😃 😄 😁 😆 😅 🤣 😂 🙂 🙃 😉 😊 😇 🥰 😍 🤩 😘 😗 😚 😋 😛 😜 🤪 😝 🤑 🤗 🤭 🤫 🤔 🤐 🤨 😐 😑 😶 😏 😒 🙄 😬 😌 😔 😪 🤤 😴 😷 🤒 🤕 🤢 🤮 🥵 🥶 🥴 😵 🤯 🤠 🥳 😎 🤓 🧐 😕 😟 🙁 😮 😯 😲 😳 🥺 😦 😧 😨 😰 😥 😢 😭 😱 😖 😣 😞 😓 😩 😫 🥱 😤 😡 😠 🤬 😈 👿 💀 💩 🤡 👻 👽 🤖",
+    emoji:
+      "😀 😃 😄 😁 😆 😅 🤣 😂 🙂 🙃 😉 😊 😇 🥰 😍 🤩 😘 😗 😚 😋 😛 😜 🤪 😝 🤑 🤗 🤭 🤫 🤔 🤐 🤨 😐 😑 😶 😏 😒 🙄 😬 😌 😔 😪 🤤 😴 😷 🤒 🤕 🤢 🤮 🥵 🥶 🥴 😵 🤯 🤠 🥳 😎 🤓 🧐 😕 😟 🙁 😮 😯 😲 😳 🥺 😦 😧 😨 😰 😥 😢 😭 😱 😖 😣 😞 😓 😩 😫 🥱 😤 😡 😠 🤬 😈 👿 💀 💩 🤡 👻 👽 🤖",
   },
   {
     id: "gestures",
     icon: "👍",
     label: "Жесты",
-    emoji: "👍 👎 👌 🤌 🤏 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 👇 ☝️ ✋ 🤚 🖐 🖖 👋 👏 🙌 👐 🤲 🤝 🙏 ✍️ 💪 🦾 🫶 👀 🧠 💅 🤳",
+    emoji:
+      "👍 👎 👌 🤌 🤏 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 👇 ☝️ ✋ 🤚 🖐 🖖 👋 👏 🙌 👐 🤲 🤝 🙏 ✍️ 💪 🦾 🫶 👀 🧠 💅 🤳",
   },
   {
     id: "hearts",
     icon: "❤️",
     label: "Сердца",
-    emoji: "❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 ❤️‍🔥 💋 💯 💢 💥 💫 💦 💨 🔥 ✨ ⭐ 🌟",
+    emoji:
+      "❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 ❤️‍🔥 💋 💯 💢 💥 💫 💦 💨 🔥 ✨ ⭐ 🌟",
   },
   {
     id: "animals",
     icon: "🐶",
     label: "Животные",
-    emoji: "🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🙈 🙉 🙊 🐔 🐧 🐦 🦅 🦉 🐺 🐴 🦄 🐝 🦋 🐢 🐍 🐙 🐬 🐳 🦈 🌸 🌹 🌻 🌷 🌲 🍀 🌈 ☀️ 🌙 ⛄",
+    emoji:
+      "🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🙈 🙉 🙊 🐔 🐧 🐦 🦅 🦉 🐺 🐴 🦄 🐝 🦋 🐢 🐍 🐙 🐬 🐳 🦈 🌸 🌹 🌻 🌷 🌲 🍀 🌈 ☀️ 🌙 ⛄",
   },
   {
     id: "food",
     icon: "🍔",
     label: "Еда",
-    emoji: "🍏 🍎 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🍒 🍑 🥭 🍍 🥥 🥝 🍅 🥑 🥦 🌽 🥕 🥐 🍞 🧀 🍳 🥞 🍔 🍟 🍕 🌭 🥪 🌮 🍝 🍜 🍣 🍰 🎂 🧁 🍩 🍪 🍫 🍬 🍿 ☕ 🍵 🧃 🥤",
+    emoji:
+      "🍏 🍎 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🍒 🍑 🥭 🍍 🥥 🥝 🍅 🥑 🥦 🌽 🥕 🥐 🍞 🧀 🍳 🥞 🍔 🍟 🍕 🌭 🥪 🌮 🍝 🍜 🍣 🍰 🎂 🧁 🍩 🍪 🍫 🍬 🍿 ☕ 🍵 🧃 🥤",
   },
   {
     id: "activities",
     icon: "🎉",
     label: "Праздник",
-    emoji: "🎉 🎊 🎁 🎈 🎄 🎃 🏆 🥇 ⚽ 🏀 🏐 🎾 🥊 🎮 🎲 🎯 🎵 🎶 🎤 🎧 🎸 🎬 📸 💻 📱 ⏰ 💡 📚 ✏️ 💰 🚗 ✈️ 🚀 🏠 🌍 ✅ ❌ ❓ ❗ 🆗",
+    emoji:
+      "🎉 🎊 🎁 🎈 🎄 🎃 🏆 🥇 ⚽ 🏀 🏐 🎾 🥊 🎮 🎲 🎯 🎵 🎶 🎤 🎧 🎸 🎬 📸 💻 📱 ⏰ 💡 📚 ✏️ 💰 🚗 ✈️ 🚀 🏠 🌍 ✅ ❌ ❓ ❗ 🆗",
   },
 ].map((c) => ({ ...c, emoji: c.emoji.split(" ") }));
 
-// Вставляет текст в поле на место курсора и ставит курсор после вставки
 type TextField = HTMLInputElement | HTMLTextAreaElement;
 
-export function insertAtCursor(input: TextField | null | undefined, value: string, onChange: (next: string) => void, text: string) {
+function insertAtCursor(
+  input: TextField | null | undefined,
+  value: string,
+  onChange: (next: string) => void,
+  text: string,
+) {
   const start = input?.selectionStart ?? value.length;
   const end = input?.selectionEnd ?? value.length;
   const next = value.slice(0, start) + text + value.slice(end);
@@ -61,9 +70,6 @@ export function insertAtCursor(input: TextField | null | undefined, value: strin
   });
 }
 
-// Кнопка 😊 с панелью эмодзи. inputRef — поле, куда вставлять; панель не закрывается
-// после выбора, чтобы можно было поставить несколько смайликов подряд.
-// placement: "top" — панель над кнопкой (поле внизу экрана), "bottom" — под ней
 export default function EmojiPicker({
   inputRef,
   value,
@@ -84,13 +90,18 @@ export default function EmojiPicker({
   const [tab, setTab] = useState(() => (recent.length ? "recent" : "smiles"));
 
   const tabs = recent.length
-    ? [{ id: "recent", icon: "🕘", label: "Недавние", emoji: recent }, ...CATEGORIES]
+    ? [
+        { id: "recent", icon: "🕘", label: "Недавние", emoji: recent },
+        ...CATEGORIES,
+      ]
     : CATEGORIES;
   const current = tabs.find((t) => t.id === tab) ?? tabs[0];
 
   const pick = (emoji: string) => {
     insertAtCursor(inputRef.current, value, onChange, emoji);
-    setRecent((list) => [emoji, ...list.filter((e) => e !== emoji)].slice(0, RECENT_LIMIT));
+    setRecent((list) =>
+      [emoji, ...list.filter((e) => e !== emoji)].slice(0, RECENT_LIMIT),
+    );
   };
 
   return (
@@ -101,7 +112,6 @@ export default function EmojiPicker({
         title="Смайлики"
         aria-haspopup="dialog"
         aria-expanded={menu.open}
-        // mousedown не забирает фокус у поля — курсор остаётся на месте
         onMouseDown={(e) => e.preventDefault()}
         onClick={menu.toggle}
       >
@@ -109,11 +119,21 @@ export default function EmojiPicker({
       </button>
 
       {menu.open && (
-        <div className={`emoji__panel emoji__panel--${placement} emoji__panel--${align}`} role="dialog" aria-label="Смайлики">
+        <div
+          className={`emoji__panel emoji__panel--${placement} emoji__panel--${align}`}
+          role="dialog"
+          aria-label="Смайлики"
+        >
           <div className="emoji__title">{current.label}</div>
           <div className="emoji__grid" onMouseDown={(e) => e.preventDefault()}>
             {current.emoji.map((emoji) => (
-              <button key={emoji} type="button" className="emoji__item" onClick={() => pick(emoji)} title={emoji}>
+              <button
+                key={emoji}
+                type="button"
+                className="emoji__item"
+                onClick={() => pick(emoji)}
+                title={emoji}
+              >
                 {emoji}
               </button>
             ))}

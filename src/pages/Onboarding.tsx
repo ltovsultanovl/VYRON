@@ -5,7 +5,6 @@ import { avatarColors } from "../data";
 import { validateName } from "../profile";
 import type { NewProfile } from "../context/ProfileContext";
 
-// Первый вход: просим имя и фамилию, создаём профиль
 export default function Onboarding({ onSubmit }: { onSubmit: (data: NewProfile) => Promise<void> }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");

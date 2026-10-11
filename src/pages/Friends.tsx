@@ -14,7 +14,6 @@ import type { Navigate, Person } from "../types";
 const SEARCH_DELAY = 300;
 
 
-// Строка человека в списке: аватар, имя, город, действия
 function PersonRow({ person, onNavigate }: { person: Person; onNavigate: Navigate }) {
   const { myId } = useProfile();
   const { openChat } = useChatActions();
@@ -192,7 +191,6 @@ const Failed = ({ error, onRetry }: { error: string; onRetry: () => void }) => (
   </div>
 );
 
-// section: "" — мои друзья, "requests" — заявки, "search" — поиск людей
 export default function Friends({ section, query, onNavigate }: { section: string; query: string; onNavigate: Navigate }) {
   const { friends, incoming } = useFriends();
   const current = ["requests", "search"].includes(section) ? section : "all";

@@ -7,12 +7,13 @@ import type { Photo } from "../types";
 import { addPhoto, explainError, removeImage } from "../api";
 import { useFileDrop, useFilePicker } from "../hooks";
 
-// Двухшаговая загрузка, как в VK:
-// 1) «Загрузка новой фотографии» — выбор файла / drag&drop
-// 2) «Фотография на вашей странице» — предпросмотр миниатюр.
-// Фото сохраняется целиком в «Фото» пользователя (с лайками и комментариями), а на аватаре
-// показывается кругом. onSaved(photo) — чтобы альбом на странице сразу его показал
-export default function AvatarUploadModal({ onClose, onSaved }: { onClose: () => void; onSaved?: (photo: Photo) => void }) {
+export default function AvatarUploadModal({
+  onClose,
+  onSaved,
+}: {
+  onClose: () => void;
+  onSaved?: (photo: Photo) => void;
+}) {
   const { myId, profile, updateProfile } = useProfile();
   const [saving, setSaving] = useState(false);
   const showSnackbar = useSnackbar();
@@ -46,7 +47,6 @@ export default function AvatarUploadModal({ onClose, onSaved }: { onClose: () =>
       onSaved?.(photo);
       const old = profile.avatar;
       if (await updateProfile({ avatar: photo.src })) {
-        // Старый аватар удаляем, только если это был отдельный файл, а не фото из альбома
         if (old?.includes("/avatars/")) removeImage(old).catch(() => {});
         showSnackbar("Фотография обновлена");
         onClose();
@@ -66,7 +66,11 @@ export default function AvatarUploadModal({ onClose, onSaved }: { onClose: () =>
         width={560}
         footer={
           <>
-            <button className="btn btn--secondary" onClick={() => setImage(null)} disabled={saving}>
+            <button
+              className="btn btn--secondary"
+              onClick={() => setImage(null)}
+              disabled={saving}
+            >
               Вернуться назад
             </button>
             <button className="btn" onClick={save} disabled={saving}>
@@ -76,7 +80,8 @@ export default function AvatarUploadModal({ onClose, onSaved }: { onClose: () =>
         }
       >
         <p className="modal__text">
-          Выбранная область будет показываться на вашей странице, в новостях, сообщениях и комментариях.
+          Выбранная область будет показываться на вашей странице, в новостях,
+          сообщениях и комментариях.
         </p>
         {error && <div className="form-row__error">{error}</div>}
         <div className="upload-preview">
@@ -92,9 +97,13 @@ export default function AvatarUploadModal({ onClose, onSaved }: { onClose: () =>
 
   return (
     <Modal title="Загрузка новой фотографии" onClose={onClose} width={560}>
-      <div className={`dropzone ${dragging ? "dropzone--active" : ""}`} {...dropProps}>
+      <div
+        className={`dropzone ${dragging ? "dropzone--active" : ""}`}
+        {...dropProps}
+      >
         <p className="modal__text">
-          Друзьям будет проще узнать вас, если вы загрузите свою настоящую фотографию.
+          Друзьям будет проще узнать вас, если вы загрузите свою настоящую
+          фотографию.
           <br />
           Вы можете загрузить изображение в формате JPG, GIF или PNG.
         </p>
@@ -104,8 +113,8 @@ export default function AvatarUploadModal({ onClose, onSaved }: { onClose: () =>
         {picker.input}
         {error && <div className="form-row__error">{error}</div>}
         <p className="dropzone__hint">
-          Можно перетащить фотографию сюда. Если у вас возникают проблемы с загрузкой, попробуйте выбрать
-          фотографию меньшего размера.
+          Можно перетащить фотографию сюда. Если у вас возникают проблемы с
+          загрузкой, попробуйте выбрать фотографию меньшего размера.
         </p>
       </div>
     </Modal>

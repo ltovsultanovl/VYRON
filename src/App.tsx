@@ -25,8 +25,6 @@ import { BookmarksProvider } from "./context/BookmarksContext";
 import { supabaseConfigured } from "./lib/supabase";
 import { useStoredState } from "./hooks";
 
-// Страницы грузятся отдельными файлами — первый экран открывается быстрее
-// Загрузчики страниц: браузер скачивает файл страницы один раз, повторный вызов берёт готовый
 const pages = {
   feed: () => import("./pages/Feed"),
   profile: () => import("./pages/Profile"),
@@ -58,16 +56,10 @@ const EditProfile = lazyPage(pages.editProfile);
 const Blacklist = lazyPage(pages.blacklist);
 const Bookmarks = lazyPage(pages.bookmarks);
 
-
-// Тему до отрисовки уже поставил скрипт в index.html (с учётом системной)
 type Theme = "light" | "dark";
-const readTheme = (): Theme => (document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+const readTheme = (): Theme =>
+  document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 
-// Адрес → экран: #feed, #profile, #user/<id>, #edit, #messages, #friends[/requests|/search?q=…],
-// #communities[/manage|/search], #club/<id>[/manage[/раздел]],
-// #photos[/<id>][/album/<id>] — фотографии и альбомы,
-// #music[/playlists|/search?q=|/playlist/<id>|/user/<id>] — музыка,
-// #video[/search?q=|/user/<id>|/<id>] — видео, #notifications — уведомления
 const VIEWS = [
   "feed",
   "profile",
@@ -98,8 +90,6 @@ const readRoute = () => {
   };
 };
 
-// Код открытой страницы начинаем качать сразу при запуске — параллельно с проверкой
-// входа и загрузкой профиля, а не после них. Ошибку здесь глушим: её покажет сама страница
 const PAGE_OF_VIEW: Record<string, keyof typeof pages> = {
   feed: "feed",
   profile: "profile",
@@ -118,13 +108,14 @@ const PAGE_OF_VIEW: Record<string, keyof typeof pages> = {
 };
 if (supabaseConfigured) pages[PAGE_OF_VIEW[readRoute().view]]().catch(() => {});
 
-// Остальные разделы докачиваем, когда браузер освободится, — тогда переход по меню
-// открывается мгновенно, без крутилки. В режиме экономии трафика не докачиваем
 function usePrefetchPages() {
   useEffect(() => {
-    const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
+    const saveData = (
+      navigator as Navigator & { connection?: { saveData?: boolean } }
+    ).connection?.saveData;
     if (saveData) return;
-    const run = () => Object.values(pages).forEach((load) => load().catch(() => {}));
+    const run = () =>
+      Object.values(pages).forEach((load) => load().catch(() => {}));
     if ("requestIdleCallback" in window) {
       const id = requestIdleCallback(run, { timeout: 3000 });
       return () => cancelIdleCallback(id);
@@ -157,8 +148,13 @@ function PageError({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-// Приложение для вошедшего пользователя
-function Shell({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
+function Shell({
+  theme,
+  onToggleTheme,
+}: {
+  theme: Theme;
+  onToggleTheme: () => void;
+}) {
   usePrefetchPages();
   const { myId } = useProfile();
   const { incoming } = useFriends();
@@ -181,7 +177,6 @@ function Shell({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => vo
 
   const { view, param, sub, section, query } = route;
   const { invitations } = useCommunities();
-  // Своя страница по адресу #user/<мой id> — то же, что #profile
   const profileId =
     view === "profile" || (view === "user" && param === myId)
       ? myId
@@ -212,65 +207,73 @@ function Shell({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => vo
             fallback={(reset) => <PageError onRetry={reset} />}
           >
             <Suspense fallback={<PageLoading />}>
-            {view === "feed" && <Feed />}
-            {profileId && (
-              <Profile
-                key={profileId}
-                userId={profileId}
-                onNavigate={navigate}
-              />
-            )}
-            {view === "edit" && <EditProfile onNavigate={navigate} />}
-            {view === "messages" && <OnlineMessenger />}
-            {view === "friends" && (
-              <Friends section={param} query={query} onNavigate={navigate} />
-            )}
-            {view === "communities" && (
-              <Communities
-                section={param}
-                query={query}
-                onNavigate={navigate}
-              />
-            )}
-            {view === "music" && (
-              <Music
-                section={param}
-                param={sub}
-                query={query}
-                onNavigate={navigate}
-              />
-            )}
-            {view === "notifications" && <Notifications onNavigate={navigate} />}
-            {view === "blacklist" && <Blacklist />}
-            {view === "bookmarks" && <Bookmarks section={param} onNavigate={navigate} />}
-            {view === "video" && (
-              <Video
-                section={param}
-                param={sub}
-                query={query}
-                onNavigate={navigate}
-              />
-            )}
-            {view === "photos" && (
-              <Photos
-                key={!param || param === "album" ? "me" : param}
-                param={param}
-                sub={sub}
-                section={section}
-                onNavigate={navigate}
-              />
-            )}
-            {view === "club" && sub !== "manage" && (
-              <Community key={param} id={Number(param)} onNavigate={navigate} />
-            )}
-            {view === "club" && sub === "manage" && (
-              <CommunityManage
-                key={param}
-                id={Number(param)}
-                section={section}
-                onNavigate={navigate}
-              />
-            )}
+              {view === "feed" && <Feed />}
+              {profileId && (
+                <Profile
+                  key={profileId}
+                  userId={profileId}
+                  onNavigate={navigate}
+                />
+              )}
+              {view === "edit" && <EditProfile onNavigate={navigate} />}
+              {view === "messages" && <OnlineMessenger />}
+              {view === "friends" && (
+                <Friends section={param} query={query} onNavigate={navigate} />
+              )}
+              {view === "communities" && (
+                <Communities
+                  section={param}
+                  query={query}
+                  onNavigate={navigate}
+                />
+              )}
+              {view === "music" && (
+                <Music
+                  section={param}
+                  param={sub}
+                  query={query}
+                  onNavigate={navigate}
+                />
+              )}
+              {view === "notifications" && (
+                <Notifications onNavigate={navigate} />
+              )}
+              {view === "blacklist" && <Blacklist />}
+              {view === "bookmarks" && (
+                <Bookmarks section={param} onNavigate={navigate} />
+              )}
+              {view === "video" && (
+                <Video
+                  section={param}
+                  param={sub}
+                  query={query}
+                  onNavigate={navigate}
+                />
+              )}
+              {view === "photos" && (
+                <Photos
+                  key={!param || param === "album" ? "me" : param}
+                  param={param}
+                  sub={sub}
+                  section={section}
+                  onNavigate={navigate}
+                />
+              )}
+              {view === "club" && sub !== "manage" && (
+                <Community
+                  key={param}
+                  id={Number(param)}
+                  onNavigate={navigate}
+                />
+              )}
+              {view === "club" && sub === "manage" && (
+                <CommunityManage
+                  key={param}
+                  id={Number(param)}
+                  section={section}
+                  onNavigate={navigate}
+                />
+              )}
             </Suspense>
           </ErrorBoundary>
         </main>
@@ -301,31 +304,30 @@ export default function App() {
   if (!session) return <AuthPage />;
   if (recovering) return <NewPassword onDone={finishRecovery} />;
 
-  // key — при смене аккаунта все данные предыдущего пользователя сбрасываются
   return (
     <ProfileProvider key={session.user.id} userId={session.user.id}>
       <FriendsProvider>
         <BlocksProvider>
-        <BookmarksProvider>
-        <CommunitiesProvider>
-          <ChatProvider>
-            <PlayerProvider>
-              <MusicProvider>
-                <VideoProvider>
-                  <NotificationsProvider>
-                    <Shell
-                      theme={theme}
-                      onToggleTheme={() =>
-                        setTheme((t) => (t === "dark" ? "light" : "dark"))
-                      }
-                    />
-                  </NotificationsProvider>
-                </VideoProvider>
-              </MusicProvider>
-            </PlayerProvider>
-          </ChatProvider>
-        </CommunitiesProvider>
-        </BookmarksProvider>
+          <BookmarksProvider>
+            <CommunitiesProvider>
+              <ChatProvider>
+                <PlayerProvider>
+                  <MusicProvider>
+                    <VideoProvider>
+                      <NotificationsProvider>
+                        <Shell
+                          theme={theme}
+                          onToggleTheme={() =>
+                            setTheme((t) => (t === "dark" ? "light" : "dark"))
+                          }
+                        />
+                      </NotificationsProvider>
+                    </VideoProvider>
+                  </MusicProvider>
+                </PlayerProvider>
+              </ChatProvider>
+            </CommunitiesProvider>
+          </BookmarksProvider>
         </BlocksProvider>
       </FriendsProvider>
     </ProfileProvider>

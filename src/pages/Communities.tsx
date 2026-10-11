@@ -12,7 +12,6 @@ import type { Community, Navigate } from "../types";
 import { leaderLabel } from "../components/communityRoles";
 
 
-// Подпись под названием: «Публичная страница · Музыка» / «Закрытая группа»
 export const communityKindLabel = (c: Pick<Community, "isPage" | "access" | "category">) =>
   [
     c.isPage
@@ -27,7 +26,6 @@ export const communityKindLabel = (c: Pick<Community, "isPage" | "access" | "cat
     .filter(Boolean)
     .join(" · ");
 
-// Подсветка найденного куска в названии
 function Highlight({ text, query }: { text: string; query: string }) {
   const i = query ? text.toLowerCase().indexOf(query.toLowerCase()) : -1;
   if (i < 0) return text;
@@ -82,7 +80,6 @@ function Spinner() {
   );
 }
 
-// Результаты поиска: сначала свои сообщества, ниже — все остальные
 function SearchResults({ query, mine, onlyGlobal }: { query: string; mine: Community[]; onlyGlobal: boolean }) {
   const q = useDebounced(query.trim(), 300);
   const results = useResource(() => searchCommunities(q), [q]);
@@ -104,7 +101,6 @@ function SearchResults({ query, mine, onlyGlobal }: { query: string; mine: Commu
           ))}
         </>
       )}
-      {/* Свои нашлись, а других нет — блок «Другие» не показываем */}
       {!(own.length && results.data && !others.length) && (
         <>
           <div className="friends-group">
@@ -143,7 +139,6 @@ function SearchResults({ query, mine, onlyGlobal }: { query: string; mine: Commu
   );
 }
 
-// section: "" — мои, "manage" — управление, "search" — поиск
 export default function Communities({
   section,
   query: initialQuery,
@@ -159,7 +154,6 @@ export default function Communities({
   const [query, setQuery] = useState(initialQuery ?? "");
   const current = ["manage", "search"].includes(section) ? section : "all";
 
-  // Переход по ссылке #communities/search?q=… — подставляем запрос
   useEffect(() => {
     if (initialQuery) setQuery(initialQuery);
   }, [initialQuery]);
@@ -198,7 +192,6 @@ export default function Communities({
       </div>
     );
   } else if (current === "manage") {
-    // В «Управлении» поиск фильтрует только свои
     const q = query.trim();
     const list = q ? managed.filter((m) => matches(m.community, q)) : managed;
     content = list.length ? (

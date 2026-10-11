@@ -15,11 +15,9 @@ const TABS: { id: NotificationFilter; label: string }[] = [
   { id: "communities", label: "Сообщества" },
 ];
 
-// Страница уведомлений: все события с фильтрами; открыли — значит прочитали
 export default function Notifications({ onNavigate }: { onNavigate: Navigate }) {
   const { notifications, status, error, reload, markAllRead, hide } = useNotifications();
   const [filter, setFilter] = useState<NotificationFilter>("all");
-  // Подсвечиваем то, что было новым на момент открытия страницы
   const [fresh] = useState(() => new Set(notifications.filter((n) => !n.readAt).map((n) => n.id)));
 
   useEffect(() => {

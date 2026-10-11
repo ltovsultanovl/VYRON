@@ -1,8 +1,4 @@
-/* =========================================================
-   Токены (по мотивам VKUI)
-   ========================================================= */
 :root {
-  /* Ширина страницы: шапка и контент выровнены по ней */
   --page-width: 1100px;
   --side-width: 250px;
   --profile-side-width: 300px;
@@ -44,7 +40,7 @@
   --header-total: calc(var(--header-h) + var(--safe-top));
   --nav-h: 56px;
   --radius: 12px;
-  --on-accent: #ffffff; /* текст и значки на акцентном фоне */
+  --on-accent: #ffffff;
 }
 
 [data-theme="dark"] {
@@ -77,9 +73,6 @@
   --on-accent: #0a0a0a;
 }
 
-/* =========================================================
-   База
-   ========================================================= */
 * {
   box-sizing: border-box;
 }
@@ -138,9 +131,6 @@ textarea {
   border: 0;
 }
 
-/* =========================================================
-   Аватар
-   ========================================================= */
 .avatar {
   --c: #5181b8;
   position: relative;
@@ -189,9 +179,6 @@ textarea {
   border: 2px solid var(--card);
 }
 
-/* =========================================================
-   Кнопки
-   ========================================================= */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -272,9 +259,6 @@ textarea {
   border-radius: 6px;
 }
 
-/* =========================================================
-   Шапка
-   ========================================================= */
 .header {
   position: sticky;
   top: 0;
@@ -442,9 +426,6 @@ textarea {
   font-size: 13px;
 }
 
-/* =========================================================
-   Сетка страницы: 150 | 550 | 230
-   ========================================================= */
 .layout {
   max-width: var(--page-width);
   margin: 0 auto;
@@ -468,9 +449,6 @@ textarea {
   top: calc(var(--header-total) + 16px);
 }
 
-/* =========================================================
-   Левое меню
-   ========================================================= */
 .sidebar {
   position: sticky;
   top: calc(var(--header-total) + 16px);
@@ -530,9 +508,6 @@ textarea {
   margin: 8px 6px;
 }
 
-/* =========================================================
-   Карточки
-   ========================================================= */
 .card {
   background: var(--card);
   border-radius: var(--radius);
@@ -559,105 +534,6 @@ textarea {
   cursor: pointer;
 }
 
-/* =========================================================
-   Истории
-   ========================================================= */
-.stories {
-  display: flex;
-  gap: 8px;
-  padding: 12px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.stories::-webkit-scrollbar {
-  display: none;
-}
-.story {
-  position: relative;
-  flex-shrink: 0;
-  width: 88px;
-  height: 148px;
-  border-radius: 10px;
-  overflow: hidden;
-  cursor: pointer;
-  background: var(--field-bg) center / cover no-repeat;
-  transition: transform 0.15s;
-}
-.story:hover {
-  transform: translateY(-1px);
-}
-.story::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.25) 0%,
-    transparent 35%,
-    transparent 60%,
-    rgba(0, 0, 0, 0.55) 100%
-  );
-}
-.story__avatar {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 1;
-  padding: 2px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-.story__avatar .avatar {
-  border: 2px solid var(--card);
-}
-.story--seen .story__avatar {
-  background: rgba(255, 255, 255, 0.6);
-}
-.story__name {
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: 8px;
-  z-index: 1;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 14px;
-  word-break: break-word;
-}
-.story--add {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  padding-bottom: 10px;
-  background: var(--field-bg);
-}
-.story--add::after {
-  display: none;
-}
-.story--add .story__plus {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -70%);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: var(--on-accent);
-  display: grid;
-  place-items: center;
-}
-.story--add .story__name {
-  color: var(--text);
-  position: static;
-  text-align: center;
-}
-
-/* =========================================================
-   Композер
-   ========================================================= */
 .composer {
   display: flex;
   align-items: flex-start;
@@ -695,9 +571,6 @@ textarea {
   border-top: 1px solid var(--separator);
 }
 
-/* =========================================================
-   Пост
-   ========================================================= */
 .post__head {
   display: flex;
   align-items: center;
@@ -748,18 +621,12 @@ textarea {
 .post__text-more:hover {
   text-decoration: underline;
 }
-.post__media {
-  margin-top: 10px;
-  aspect-ratio: 16 / 10;
-  background: var(--field-bg) center / cover no-repeat;
-}
 .post__actions {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 16px 12px;
 }
-.post__media + .post__actions,
 .post__text + .post__actions {
   padding-top: 12px;
 }
@@ -806,19 +673,6 @@ textarea {
   }
 }
 
-.post__views {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-  color: var(--text-secondary);
-  font-size: 12.5px;
-}
-.post__views svg {
-  color: var(--icon-secondary);
-}
-
-/* Комментарии */
 .comments {
   border-top: 1px solid var(--separator);
   padding: 4px 16px 4px;
@@ -877,22 +731,6 @@ textarea {
 .comment__reply:hover {
   text-decoration: underline;
 }
-.comment__like {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  align-self: center;
-  padding: 4px;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: 12.5px;
-  color: var(--icon-secondary);
-  cursor: pointer;
-}
-.comment__like--on {
-  color: var(--like);
-}
 
 .comment-form {
   display: flex;
@@ -926,9 +764,6 @@ textarea {
   background: none;
 }
 
-/* =========================================================
-   Правое меню
-   ========================================================= */
 .side-menu {
   padding: 6px;
 }
@@ -961,9 +796,6 @@ textarea {
   margin: 6px 4px;
 }
 
-/* =========================================================
-   Профиль
-   ========================================================= */
 .profile-head {
   position: relative;
 }
@@ -974,7 +806,6 @@ textarea {
   background: var(--cover-empty) center /
     cover no-repeat;
 }
-/* Панель с именем «наезжает» на обложку скруглёнными углами */
 .profile-info {
   position: relative;
   display: flex;
@@ -1039,23 +870,6 @@ textarea {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
-}
-
-.photos-strip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  padding: 0 12px 12px;
-}
-.photos-strip div {
-  aspect-ratio: 3 / 4;
-  border-radius: 6px;
-  background: var(--field-bg) center / cover no-repeat;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-.photos-strip div:hover {
-  opacity: 0.9;
 }
 
 .wall-tabs {
@@ -1130,13 +944,10 @@ textarea {
   font-size: 14px;
 }
 
-/* =========================================================
-   Мессенджер
-   ========================================================= */
 .messenger {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
-  height: calc(100vh - var(--header-total) - 32px); /* запасной вариант для старых браузеров */
+  height: calc(100vh - var(--header-total) - 32px);
   height: calc(100dvh - var(--header-total) - 32px);
   min-height: 480px;
   overflow: hidden;
@@ -1306,7 +1117,6 @@ textarea {
   flex-direction: column;
   gap: inherit;
 }
-/* Статус своего сообщения: ✓ отправлено (серые), ✓✓ прочитано (синие), часики, ошибка */
 .msg-status {
   display: inline-flex;
   align-items: center;
@@ -1412,9 +1222,6 @@ textarea {
   color: var(--accent);
 }
 
-/* =========================================================
-   Друзья
-   ========================================================= */
 .friends-search {
   padding: 0 16px 12px;
 }
@@ -1475,10 +1282,6 @@ textarea {
   text-decoration: underline;
 }
 
-/* =========================================================
-   Аватар с фото
-   ========================================================= */
-/* Фото любой формы (аватар теперь — целое фото из альбома) обрезается ровным кругом */
 .avatar__img {
   position: absolute;
   inset: 0;
@@ -1489,9 +1292,6 @@ textarea {
   display: block;
 }
 
-/* =========================================================
-   Кнопки: дополнительные режимы
-   ========================================================= */
 .btn--danger {
   background: #e64646;
 }
@@ -1514,14 +1314,7 @@ textarea {
   right: 0;
   left: auto;
 }
-.dropdown--left {
-  left: 0;
-  right: auto;
-}
 
-/* =========================================================
-   Профиль: обложка, аватар, статус
-   ========================================================= */
 .profile-cover__action {
   position: absolute;
   top: 16px;
@@ -1551,15 +1344,6 @@ textarea {
 .avatar-add:hover {
   background: var(--accent-hover);
 }
-.avatar-edit {
-  position: relative;
-  display: block;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: none;
-  cursor: pointer;
-}
 .avatar-edit__overlay {
   position: absolute;
   inset: 0;
@@ -1570,10 +1354,6 @@ textarea {
   color: #fff;
   opacity: 0;
   transition: opacity 0.15s;
-}
-.avatar-edit:hover .avatar-edit__overlay,
-.avatar-edit:focus-visible .avatar-edit__overlay {
-  opacity: 1;
 }
 .profile-info__avatar .dropdown {
   top: calc(100% + 4px);
@@ -1613,9 +1393,6 @@ textarea {
   font-size: 12px;
 }
 
-/* =========================================================
-   Поля формы (VKUI-like)
-   ========================================================= */
 .field {
   width: 100%;
   height: 36px;
@@ -1671,9 +1448,6 @@ textarea {
   min-width: 0;
 }
 
-/* =========================================================
-   Редактирование профиля
-   ========================================================= */
 .edit__title {
   padding: 16px 20px 4px;
   font-size: 17px;
@@ -1725,15 +1499,11 @@ textarea {
   border-top: 1px solid var(--separator);
 }
 
-/* =========================================================
-   Модальные окна
-   ========================================================= */
 .modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 100;
   display: grid;
-  /* Колонка по ширине экрана: окно с заданной шириной не может её растянуть */
   grid-template-columns: minmax(0, 1fr);
   place-items: center;
   padding: 16px;
@@ -1792,7 +1562,6 @@ textarea {
   }
 }
 
-/* Загрузка фото */
 .dropzone {
   display: flex;
   flex-direction: column;
@@ -1838,7 +1607,6 @@ textarea {
   object-fit: cover;
 }
 
-/* Подробная информация */
 .details {
   display: flex;
   flex-direction: column;
@@ -1872,9 +1640,6 @@ textarea {
   font-weight: 600;
 }
 
-/* =========================================================
-   Снекбар
-   ========================================================= */
 .snackbar {
   position: fixed;
   left: 24px;
@@ -1905,7 +1670,6 @@ textarea {
   color: var(--accent);
 }
 
-/* Подключение к онлайн-чату */
 .chat-status {
   display: flex;
   flex-direction: column;
@@ -1940,7 +1704,6 @@ textarea {
   }
 }
 
-/* Экран ошибки (ErrorBoundary) */
 .error-screen {
   max-width: 480px;
   margin: 40px auto;
@@ -1958,9 +1721,6 @@ textarea {
   line-height: 20px;
 }
 
-/* =========================================================
-   Профиль: медиа, «Создать пост», промо, друзья
-   ========================================================= */
 .columns--profile {
   grid-template-columns: minmax(0, 1fr) var(--profile-side-width);
 }
@@ -2057,13 +1817,6 @@ textarea {
   font-weight: 400;
 }
 
-.media__hint {
-  padding: 8px 16px 0;
-  color: var(--text-secondary);
-  font-size: 12.5px;
-}
-
-/* Формы создания альбома, видео, плейлиста, сообщества */
 .media-form {
   display: flex;
   flex-direction: column;
@@ -2077,40 +1830,16 @@ textarea {
   font-size: 13px;
 }
 
-/* Альбомы */
 .albums {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px 12px;
   padding: 0 16px;
 }
-.album__cover {
-  position: relative;
-  display: grid;
-  place-items: center;
-  aspect-ratio: 16 / 10;
-  border-radius: 10px;
-  background: var(--field-bg);
-  color: var(--icon-secondary);
-}
 .album:hover .media__photo-delete {
   opacity: 1;
 }
-.album__title {
-  margin-top: 8px;
-  font-size: 14px;
-  font-weight: 500;
-}
-.album__meta {
-  margin-top: 2px;
-  color: var(--text-secondary);
-  font-size: 13px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
 
-/* Музыка: список треков */
 .tracks {
   display: flex;
   flex-direction: column;
@@ -2194,33 +1923,14 @@ textarea {
   }
 }
 
-/* Видео */
 .videos {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px 12px;
   padding: 0 16px;
 }
-.video__player {
-  position: relative;
-}
-.video__player video {
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  border-radius: 10px;
-  background: #000;
-}
 .video:hover .media__photo-delete {
   opacity: 1;
-}
-.video__title {
-  margin-top: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 @media (max-width: 760px) {
@@ -2230,7 +1940,6 @@ textarea {
   }
 }
 
-/* Окно «Все фотографии» */
 .photos-all {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -2312,12 +2021,6 @@ textarea {
 .create-post__main:hover {
   background: var(--hover);
 }
-.create-post__divider {
-  width: 1px;
-  height: 24px;
-  margin: 0 4px;
-  background: var(--separator);
-}
 
 .wall-head {
   display: flex;
@@ -2355,9 +2058,6 @@ textarea {
   padding: 0 8px 16px;
 }
 
-/* =========================================================
-   Адаптив
-   ========================================================= */
 @media (max-width: 960px) {
   .columns {
     grid-template-columns: minmax(0, 1fr);
@@ -2427,9 +2127,6 @@ textarea {
   }
 }
 
-/* =========================================================
-   Просмотр фото: фото слева, автор и комментарии справа
-   ========================================================= */
 .viewer {
   position: fixed;
   inset: 0;
@@ -2472,7 +2169,6 @@ textarea {
   animation: modal-in 0.2s ease;
 }
 
-/* Левая часть всегда тёмная, как в VK */
 .viewer__stage {
   display: flex;
   flex-direction: column;
@@ -2481,7 +2177,6 @@ textarea {
   background: #222;
   color: #e1e3e6;
 }
-/* Фото вписывается в оставшееся место целиком, панель снизу всегда видна */
 .viewer__image {
   position: relative;
   flex: 1;
@@ -2722,9 +2417,6 @@ textarea {
   }
 }
 
-/* =========================================================
-   Вход, регистрация, заставка
-   ========================================================= */
 .splash {
   min-height: 100vh;
   display: flex;
@@ -2821,9 +2513,6 @@ textarea {
   font-size: 13px;
 }
 
-/* =========================================================
-   Состояния списков, друзья, посты с фото
-   ========================================================= */
 .list-state {
   display: flex;
   flex-direction: column;
@@ -2885,7 +2574,6 @@ a.card__header--link[href]:hover {
   opacity: 1;
 }
 
-/* Поле пароля с кнопкой «Показать» и переключатель вход/регистрация */
 .password-field {
   position: relative;
 }
@@ -2923,9 +2611,6 @@ a.card__header--link[href]:hover {
   font: inherit;
 }
 
-/* =========================================================
-   Вложения в чате: фото и видео
-   ========================================================= */
 .chat {
   position: relative;
 }
@@ -3040,7 +2725,6 @@ a.card__header--link[href]:hover {
   text-align: center;
 }
 
-/* Меню скрепки: Фото / Видео / Музыка — как в VK */
 .attach-menu {
   position: relative;
 }
@@ -3083,29 +2767,12 @@ a.card__header--link[href]:hover {
   background: var(--hover);
 }
 
-/* Музыка в сообщении */
 .msg__audio {
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 260px;
   padding: 6px 6px 2px;
-}
-.msg__audio-icon {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: var(--on-accent);
-}
-.msg__audio-icon .chat-status__spinner {
-  width: 18px;
-  height: 18px;
-  border-width: 2px;
-  border-top-color: #fff;
 }
 .msg__audio-body {
   flex: 1;
@@ -3114,20 +2781,9 @@ a.card__header--link[href]:hover {
   flex-direction: column;
   gap: 4px;
 }
-.msg__audio-name {
-  font-size: 14px;
-  font-weight: 500;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
 .msg__audio audio {
   width: 100%;
   height: 32px;
-}
-.msg__audio-error {
-  color: var(--text-secondary);
-  font-size: 12.5px;
 }
 .msg--with-media:has(.msg__audio) {
   max-width: min(80%, 380px);
@@ -3142,12 +2798,10 @@ a.card__header--link[href]:hover {
   color: var(--on-accent);
 }
 
-/* Аватар профиля: клик открывает фото, у своего при наведении — действия внизу, как в VK */
 .avatar-frame {
   position: relative;
   border-radius: 50%;
 }
-/* Обрезаем по кругу только свой аватар (там полоса действий) — у чужого не спрятать точку «в сети» */
 .avatar-frame--editable {
   overflow: hidden;
 }
@@ -3215,7 +2869,6 @@ a.card__header--link[href]:hover {
   }
 }
 
-/* Голосовые сообщения */
 .voice {
   display: flex;
   align-items: center;
@@ -3266,9 +2919,6 @@ a.card__header--link[href]:hover {
   border-radius: 2px;
   background: color-mix(in srgb, var(--accent) 35%, transparent);
 }
-.voice__wave span.voice__bar--played {
-  background: var(--accent);
-}
 .voice__time {
   color: var(--text-secondary);
   font-size: 12px;
@@ -3277,7 +2927,6 @@ a.card__header--link[href]:hover {
   max-width: min(80%, 340px);
 }
 
-/* Запись голосового */
 .chat__composer--recording {
   gap: 8px;
 }
@@ -3322,17 +2971,10 @@ a.card__header--link[href]:hover {
   background: var(--accent);
   transition: height 0.1s;
 }
-/* На синем пузыре своих сообщений непрослушанная часть волны — светлее, чтобы не сливалась */
 .msg--out .voice__wave span {
   background: color-mix(in srgb, var(--text) 28%, transparent);
 }
-.msg--out .voice__wave span.voice__bar--played {
-  background: var(--accent);
-}
 
-/* =========================================================
-   Смайлики: кнопка 😊 и панель с разделами
-   ========================================================= */
 .emoji {
   position: relative;
   flex-shrink: 0;
@@ -3429,7 +3071,6 @@ a.card__header--link[href]:hover {
   opacity: 1;
 }
 
-/* В полях комментариев кнопка смайликов поменьше */
 .comment-form__field .emoji__trigger,
 .viewer__form .emoji__trigger {
   width: 28px;
@@ -3437,9 +3078,6 @@ a.card__header--link[href]:hover {
   border-radius: 6px;
 }
 
-/* =========================================================
-   «Поделиться»: окно выбора получателей и карточка в чате
-   ========================================================= */
 .share__search {
   width: 100%;
   height: 36px;
@@ -3569,7 +3207,6 @@ button.shared--state {
   cursor: pointer;
 }
 
-/* Шапка чата: аватар и имя — ссылки на страницу собеседника */
 .chat__person {
   display: inline-flex;
   border-radius: 50%;
@@ -3586,9 +3223,6 @@ button.shared--state {
   text-decoration: underline;
 }
 
-/* =========================================================
-   Действия с сообщением и удаление
-   ========================================================= */
 .msg-line {
   display: flex;
   align-items: center;
@@ -3596,7 +3230,6 @@ button.shared--state {
   max-width: 78%;
   align-self: flex-start;
 }
-/* «⋯» всегда справа от пузыря — и у своих, и у входящих сообщений */
 .msg-line--out {
   align-self: flex-end;
 }
@@ -3660,7 +3293,6 @@ button.shared--state {
   left: 0;
 }
 
-/* Галочка в окнах (например, «Удалить для всех») */
 .checkbox {
   display: inline-flex;
   align-items: center;
@@ -3693,7 +3325,6 @@ button.shared--state {
   box-shadow: 0 0 0 3px var(--accent-alpha);
 }
 
-/* Предложенная новость */
 .post__suggested {
   color: var(--accent);
 }
@@ -3703,9 +3334,6 @@ button.shared--state {
   padding: 12px 16px 0;
 }
 
-/* =========================================================
-   Сообщества
-   ========================================================= */
 .communities-head {
   padding-left: 0;
 }
@@ -3717,7 +3345,6 @@ button.shared--state {
   border-radius: 50%;
 }
 
-/* Создание: «Группа / Публичная страница» карточками */
 .kind-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -3786,7 +3413,6 @@ button.shared--state {
   font-size: 12.5px;
 }
 
-/* Страница сообщества */
 .community-head .profile-info__chip {
   font-size: 13.5px;
 }
@@ -3843,7 +3469,6 @@ button.shared--state {
   font-size: 13px;
 }
 
-/* Управление */
 .manage-design {
   position: relative;
   margin: 0 0 56px;
@@ -3899,7 +3524,6 @@ button.shared--state {
   }
 }
 
-/* Поиск сообществ */
 .search__clear {
   display: grid;
   place-items: center;
@@ -3932,9 +3556,6 @@ button.shared--state {
   white-space: nowrap;
 }
 
-/* =========================================================
-   Раздел «Фото» и альбомы
-   ========================================================= */
 .photos-page {
   position: relative;
   min-width: 0;
@@ -4025,7 +3646,6 @@ button.shared--state {
   gap: 4px;
 }
 
-/* Плитки альбомов */
 .album-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -4083,7 +3703,6 @@ button.shared--state {
   opacity: 0.85;
 }
 
-/* Сетка фото */
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -4155,7 +3774,6 @@ button.shared--state {
   color: var(--destructive, #e64646);
 }
 
-/* Окно «Перенести в альбом» */
 .album-picker {
   display: flex;
   flex-direction: column;
@@ -4230,9 +3848,6 @@ button.shared--state {
   }
 }
 
-/* =========================================================
-   Музыка: обложки, плеер, плейлисты, загрузка
-   ========================================================= */
 .track-cover {
   position: relative;
   display: grid;
@@ -4305,7 +3920,6 @@ button.shared--state {
   }
 }
 
-/* Ползунки */
 .range {
   --fill: 0%;
   flex: 1;
@@ -4348,7 +3962,6 @@ button.shared--state {
   width: 80px;
 }
 
-/* Плеер */
 .player {
   display: flex;
   flex-wrap: wrap;
@@ -4455,7 +4068,6 @@ button.shared--state {
   min-height: 0;
 }
 
-/* Мини-плеер в шапке */
 .header-player {
   position: relative;
   display: flex;
@@ -4498,7 +4110,6 @@ button.shared--state {
   margin: 0 12px;
 }
 
-/* Страница «Музыка» */
 .music-page {
   position: relative;
   min-width: 0;
@@ -4602,7 +4213,6 @@ button.shared--state {
   padding-top: 4px;
 }
 
-/* Загрузка музыки */
 .music-upload {
   border-radius: 12px;
 }
@@ -4676,7 +4286,6 @@ button.shared--state {
   color: var(--accent);
 }
 
-/* Трек и плейлист в чате */
 .shared--audio {
   padding: 2px 0;
 }
@@ -4726,9 +4335,6 @@ button.shared--state {
   }
 }
 
-/* =========================================================
-   Видео
-   ========================================================= */
 .video-page {
   position: relative;
   min-width: 0;
@@ -4813,7 +4419,6 @@ button.shared--state {
   white-space: nowrap;
 }
 
-/* Окно просмотра */
 .video-viewer__box {
   grid-template-columns: minmax(0, 1fr) 360px;
 }
@@ -4901,7 +4506,6 @@ button.shared--state {
   font-weight: 500;
 }
 
-/* Загрузка */
 .video-upload {
   display: grid;
   grid-template-columns: 200px 1fr;
@@ -4929,7 +4533,6 @@ button.shared--state {
   align-self: flex-start;
 }
 
-/* Видео в чате */
 .shared--video {
   display: flex;
   flex-direction: column;
@@ -4960,9 +4563,6 @@ button.shared--state {
   }
 }
 
-/* =========================================================
-   Уведомления
-   ========================================================= */
 .notif-bell {
   position: relative;
   margin-right: 8px;
@@ -5161,10 +4761,6 @@ button.shared--state {
   }
 }
 
-/* =========================================================
-   Адаптив: планшет — меню иконками, разделы вкладками сверху;
-   телефон — нижняя панель, список чатов ↔ чат
-   ========================================================= */
 .mobile-nav,
 .chat__back {
   display: none;
@@ -5178,14 +4774,12 @@ button.shared--state {
 }
 
 @media (max-width: 960px) {
-  /* Правая колонка уходит под содержимое, а меню раздела — вкладками над ним */
   .columns__side {
     position: static;
   }
   .columns__side:has(> .side-menu:only-child) {
     order: -1;
   }
-  /* Если у карточки свои вкладки (Друзья, Сообщества, Музыка, Видео) — меню раздела дублирует их */
   .columns:has(> :first-child .wall-tabs) > .columns__side:has(> .side-menu:only-child) {
     display: none;
   }
@@ -5230,7 +4824,6 @@ button.shared--state {
     display: none;
   }
 
-  /* Левое меню — только иконки */
   .layout {
     grid-template-columns: 48px minmax(0, 1fr);
   }
@@ -5260,37 +4853,32 @@ button.shared--state {
   .columns--profile {
     grid-template-columns: minmax(0, 1fr);
   }
-  /* Шапка профиля и сообщества: кнопки уходят на новую строку, если не помещаются рядом с именем */
   .profile-info {
     flex-wrap: wrap;
   }
   .profile-info__meta {
     min-width: 200px;
   }
-  /* Кнопки («Редактировать профиль» и значок «Поделиться» рядом) — слева */
   .profile-info__actions {
     flex-wrap: wrap;
     justify-content: flex-start;
   }
 }
 @media (max-width: 760px) {
-  /* На телефоне шапка по центру — и кнопки тоже */
   .profile-info__actions {
     position: relative;
-    left: 12px; /* чуть правее центра */
+    left: 12px;
     align-self: center;
     justify-content: center;
   }
 }
 
 @media (max-width: 760px) {
-  /* Левое меню скрыто — весь экран под содержимое */
   .layout {
     grid-template-columns: minmax(0, 1fr);
     padding-bottom: calc(var(--nav-h) + 16px + var(--safe-bottom));
   }
 
-  /* Компактная шапка */
   .header__inner {
     gap: 4px;
     padding: 0 8px;
@@ -5313,7 +4901,6 @@ button.shared--state {
     min-width: 0;
   }
 
-  /* Нижняя панель разделов */
   .mobile-nav {
     position: fixed;
     right: 0;
@@ -5358,10 +4945,9 @@ button.shared--state {
     box-shadow: 0 0 0 2px var(--accent);
   }
 
-  /* Мессенджер: сначала список чатов, по тапу — чат с кнопкой «назад» */
   .messenger {
     grid-template-columns: minmax(0, 1fr);
-    height: calc(100vh - var(--header-total) - var(--nav-h) - 16px - var(--safe-bottom)); /* запасной вариант для старых браузеров */
+    height: calc(100vh - var(--header-total) - var(--nav-h) - 16px - var(--safe-bottom));
     height: calc(100dvh - var(--header-total) - var(--nav-h) - 16px - var(--safe-bottom));
     min-height: 0;
   }
@@ -5387,7 +4973,7 @@ button.shared--state {
   }
   .modal {
     max-width: 100%;
-    max-height: calc(100vh - 16px); /* запасной вариант для старых браузеров */
+    max-height: calc(100vh - 16px);
     max-height: calc(100dvh - 16px);
   }
   .columns__side .card,
@@ -5396,7 +4982,6 @@ button.shared--state {
   }
 }
 
-/* Шторка «Ещё» (телефон) */
 .sheet-overlay {
   position: fixed;
   inset: 0;
@@ -5462,10 +5047,6 @@ button.shared--state {
   margin-left: auto;
 }
 
-/* =========================================================
-   Все телефоны: вырез и «полоска» iPhone, автозум при вводе,
-   самые узкие экраны (Fold, SE) и горизонтальная ориентация
-   ========================================================= */
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -5476,7 +5057,6 @@ body {
 .header__search-btn {
   display: none;
 }
-/* Поля ввода сжимаются вместе с контейнером, а не распирают окно своей «естественной» шириной */
 input,
 select,
 textarea {
@@ -5490,7 +5070,6 @@ textarea {
 }
 
 @media (max-width: 760px) {
-  /* В горизонтальной ориентации у iPhone вырез сбоку — не прячем под него содержимое */
   .header__inner {
     padding-right: max(8px, var(--safe-right));
     padding-left: max(8px, var(--safe-left));
@@ -5499,7 +5078,6 @@ textarea {
     padding-right: max(8px, var(--safe-right));
     padding-left: max(8px, var(--safe-left));
   }
-  /* iOS увеличивает страницу при вводе в поле со шрифтом меньше 16 px */
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
   textarea,
   select {
@@ -5510,12 +5088,11 @@ textarea {
     top: calc(var(--header-total) + 8px);
   }
   .notif-panel {
-    max-height: calc(100vh - var(--header-total) - var(--nav-h) - 24px - var(--safe-bottom)); /* запасной вариант для старых браузеров */
+    max-height: calc(100vh - var(--header-total) - var(--nav-h) - 24px - var(--safe-bottom));
     max-height: calc(100dvh - var(--header-total) - var(--nav-h) - 24px - var(--safe-bottom));
   }
 }
 
-/* Узкие телефоны: вместо поля поиска — значок, плеер в три строки */
 @media (max-width: 480px) {
   .header .search {
     display: none;
@@ -5549,7 +5126,6 @@ textarea {
   }
 }
 
-/* Узкие телефоны: кнопки в строке человека / сообщества уходят под имя, поле комментария сжимается */
 @media (max-width: 480px) {
   .friend {
     flex-wrap: wrap;
@@ -5579,7 +5155,6 @@ textarea {
   }
 }
 
-/* Самые узкие (Galaxy Fold, iPhone SE первого поколения) */
 @media (max-width: 360px) {
   .layout {
     padding-right: max(6px, var(--safe-right));
@@ -5610,7 +5185,6 @@ textarea {
   }
 }
 
-/* Горизонтальная ориентация телефона: экран низкий — панель ниже, просмотр в две колонки */
 @media (max-height: 500px) and (orientation: landscape) {
   :root {
     --nav-h: 44px;
@@ -5627,7 +5201,7 @@ textarea {
   .video-viewer__box {
     grid-template-columns: minmax(0, 1fr) min(340px, 42%);
     grid-template-rows: none;
-    height: 100vh; /* запасной вариант для старых браузеров */
+    height: 100vh;
     height: 100dvh;
     border-radius: 0;
   }
@@ -5636,23 +5210,20 @@ textarea {
   }
   .video-viewer__stage {
     aspect-ratio: auto;
-    height: 100vh; /* запасной вариант для старых браузеров */
+    height: 100vh;
     height: 100dvh;
     max-height: none;
   }
   .modal {
-    max-height: calc(100vh - 16px); /* запасной вариант для старых браузеров */
+    max-height: calc(100vh - 16px);
     max-height: calc(100dvh - 16px);
   }
   .sheet {
-    max-height: 100vh; /* запасной вариант для старых браузеров */
+    max-height: 100vh;
     max-height: 100dvh;
   }
 }
 
-/* =========================================================
-   Мессенджер: поиск по сообщениям, закреплённые, архив, «непрочитано»
-   ========================================================= */
 .im-folders {
   overflow-x: auto;
   scrollbar-width: none;
@@ -5696,7 +5267,6 @@ textarea {
   color: var(--accent);
 }
 
-/* Строка поиска под шапкой чата */
 .chat-search {
   display: flex;
   align-items: center;
@@ -5736,13 +5306,10 @@ textarea {
 }
 @media (max-width: 760px) {
   .chat-search input {
-    font-size: 16px; /* без автозума на iPhone */
+    font-size: 16px;
   }
 }
 
-/* =========================================================
-   Чёрный список
-   ========================================================= */
 .profile-more {
   position: relative;
 }
@@ -5826,7 +5393,6 @@ textarea {
   color: var(--icon-secondary);
 }
 
-/* Чат с блокировкой: вместо поля ввода — объяснение */
 .chat-blocked {
   display: flex;
   flex-direction: column;
@@ -5839,7 +5405,6 @@ textarea {
   text-align: center;
 }
 
-/* «⋯» у чата в списке: появляется при наведении, на сенсорных экранах видна всегда */
 .dialog-row {
   position: relative;
 }
@@ -5865,7 +5430,6 @@ textarea {
 .chat-menu--list:focus-within {
   opacity: 1;
 }
-/* Пока видна «⋯», прячем под ней время и счётчик */
 .dialog-row--menu:hover .dialog__time,
 .dialog-row--menu:has(.chat-menu--open) .dialog__time {
   visibility: hidden;
@@ -5888,15 +5452,11 @@ textarea {
   }
 }
 
-/* VYRON: в тёмной теме акцент белый — галочки на нём чёрные */
 [data-theme="dark"] .share__person--on .share__check,
 [data-theme="dark"] .checkbox input:checked + .checkbox__box {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230a0a0a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12 4 4 8-8'/%3E%3C/svg%3E");
 }
 
-/* =========================================================
-   Закладки
-   ========================================================= */
 .bookmarks__head {
   padding: 0;
 }
@@ -5957,7 +5517,6 @@ textarea {
   color: var(--accent);
 }
 
-/* «в сети» / «был недавно» рядом с именем на странице человека */
 .profile-info__online {
   margin-left: 10px;
   color: var(--text-secondary);
@@ -5975,13 +5534,7 @@ textarea {
   }
 }
 
-/* =========================================================
-   Телефон — как в приложении VK (VKUI).
-   Цвета наши; меняется только раскладка: блоки во всю ширину экрана
-   со скруглёнными углами и узкими промежутками, компактные аватары и кнопки
-   ========================================================= */
 @media (max-width: 760px) {
-  /* Блоки от края до края, между ними 8 px фона */
   .layout {
     gap: 0;
     padding-top: 8px;
@@ -6005,7 +5558,6 @@ textarea {
     margin-bottom: 0;
   }
 
-  /* Вкладки листаются пальцем, кнопка «Создать / Загрузить» — значком справа */
   .wall-head {
     gap: 4px;
     min-height: 48px;
@@ -6032,10 +5584,9 @@ textarea {
     padding: 0;
     justify-content: center;
     border-radius: 50%;
-    font-size: 0; /* текст остаётся для экранных чтецов */
+    font-size: 0;
   }
 
-  /* Профиль: обложка ниже, аватар 104 px, имя крупнее подписи */
   .profile-cover {
     height: 150px;
   }
@@ -6061,7 +5612,6 @@ textarea {
     font-size: 13px;
   }
 
-  /* Списки людей и сообществ: аватар 56 px, кнопки небольшие и в ряд */
   .friend {
     gap: 12px;
     padding: 10px 16px;
@@ -6087,7 +5637,6 @@ textarea {
     font-size: 13px;
   }
 
-  /* Записи: шапка и действия плотнее */
   .post__head {
     padding: 12px 12px 0 16px;
   }
@@ -6102,14 +5651,12 @@ textarea {
     padding-left: 12px;
   }
 
-  /* Шапка разделов («Мои фотографии», «Друзья» и т. п.) */
   .card__header {
     padding-right: 16px;
     padding-left: 16px;
   }
 }
 
-/* Узкие телефоны: кнопки под именем, на всю ширину строки */
 @media (max-width: 480px) {
   .friend__button,
   .friend > .friend-actions,
@@ -6121,24 +5668,18 @@ textarea {
   }
 }
 
-/* Кнопка-значок всегда квадратная — общие отступы кнопок узких экранов её не сжимают */
 @media (max-width: 760px) {
   .btn.btn--icon {
     padding: 0;
   }
 }
 
-/* =========================================================
-   Мессенджер занимает ровно экран: страница под ним не прокручивается,
-   листаются только список чатов и переписка — поиск, папки и шапка чата стоят на месте
-   ========================================================= */
 .layout:has(.messenger) {
   padding-bottom: 16px;
 }
 .messenger {
   margin-bottom: 0;
 }
-/* Докрутили список до конца — прокрутка не «перетекает» на страницу */
 .im-list__items,
 .chat__body {
   overscroll-behavior: contain;
@@ -6147,22 +5688,19 @@ textarea {
   .layout:has(.messenger) {
     padding-bottom: calc(var(--nav-h) + 8px + var(--safe-bottom));
   }
-  /* На телефоне страница с мессенджером не двигается совсем, даже «резинкой» iOS */
   html:has(.messenger),
   body:has(.messenger) {
     overflow: hidden;
     overscroll-behavior: none;
   }
 }
-/* Телефон горизонтально: экран ниже 480 px — мессенджер подстраивается под него */
 @media (max-height: 500px) {
   .messenger {
     min-height: 0;
   }
 }
-/* Левое меню не выше экрана: на низких экранах (телефон горизонтально) листается само */
 .sidebar {
-  max-height: calc(100vh - var(--header-total) - 32px); /* запасной вариант для старых браузеров */
+  max-height: calc(100vh - var(--header-total) - 32px);
   max-height: calc(100dvh - var(--header-total) - 32px);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -6172,10 +5710,6 @@ textarea {
   display: none;
 }
 
-/* =========================================================
-   Вкладки разделов закреплены под шапкой сайта, как в приложении VK:
-   листаешь список — вкладки («Мои друзья / Заявки», «Новости / Все записи»…) остаются наверху
-   ========================================================= */
 .card > .wall-tabs:first-child,
 .card > .wall-head:first-child,
 .bookmarks__head {
@@ -6191,12 +5725,10 @@ textarea {
 }
 
 @media (max-width: 960px) {
-  /* Одна колонка: flex вместо grid, чтобы меню раздела (вкладки сверху) могло «прилипать»
-     на всю высоту страницы, а не только в пределах своей строки сетки */
   .columns {
     display: flex;
     flex-direction: column;
-    align-items: stretch; /* у сетки было start — во flex это сжало бы блоки по содержимому */
+    align-items: stretch;
   }
   .columns > * {
     min-width: 0;
@@ -6209,38 +5741,28 @@ textarea {
   }
 }
 @media (max-width: 760px) {
-  /* Под шапкой без зазора, промежуток уходит вниз */
   .columns__side:has(> .side-menu:only-child) .side-menu,
   .bookmarks__head {
     box-shadow: 0 1px 0 var(--separator);
   }
 }
 
-/* =========================================================
-   Шапка закреплена намертво: не уезжает при прокрутке, «резинке» iPhone
-   и не прыгает при переходах между разделами
-   ========================================================= */
 .header {
   position: fixed;
   top: 0;
   right: 0;
   left: 0;
 }
-/* Место под шапку: содержимое начинается сразу под ней */
 .header + .layout {
   margin-top: var(--header-total);
 }
-/* Страница не оттягивается «резинкой» за край — шапка и вкладки стоят на месте */
 html,
 body {
   overscroll-behavior-y: none;
 }
 
-/* =========================================================
-   Голосовые как в VK: скорость, «не прослушано», удержание кнопки
-   ========================================================= */
 .voice__wave {
-  touch-action: none; /* протяжка пальцем перематывает, а не листает переписку */
+  touch-action: none;
 }
 .voice__meta {
   display: flex;
@@ -6248,7 +5770,6 @@ body {
   gap: 6px;
   min-height: 18px;
 }
-/* Синяя точка VK — у нас акцентная: голосовое ещё не прослушано */
 .voice__dot {
   width: 6px;
   height: 6px;
@@ -6268,7 +5789,6 @@ body {
   cursor: pointer;
 }
 
-/* Кнопка микрофона: удержание не выделяет текст и не открывает меню телефона */
 .voice-rec__start {
   touch-action: none;
   -webkit-user-select: none;
@@ -6279,7 +5799,6 @@ body {
   color: var(--like) !important;
 }
 
-/* Держим кнопку */
 .voice-rec--hold {
   position: relative;
   -webkit-user-select: none;
@@ -6329,7 +5848,6 @@ body {
   pointer-events: none;
 }
 
-/* Закреплённая запись на паузе */
 .recording--paused .recording__dot {
   animation: none;
   opacity: 0.4;
@@ -6349,7 +5867,6 @@ body {
   cursor: pointer;
 }
 
-/* Прослушивание перед отправкой */
 .voice-rec__preview {
   flex: 1;
   min-width: 0;
@@ -6369,10 +5886,6 @@ body {
   height: 22px;
 }
 
-/* =========================================================
-   Фото, видео и музыка в сообщениях — как в VK
-   ========================================================= */
-/* Фото во всю ширину пузыря: без внутренних отступов, углы обрезает сам пузырь */
 .msg--photo {
   overflow: hidden;
   padding: 0;
@@ -6392,7 +5905,6 @@ body {
 .msg--photo .msg__media video {
   width: 100%;
 }
-/* Фото с подписью: текст и время под фото с обычными отступами */
 .msg--photo:not(.msg--media-only) {
   padding-bottom: 7px;
 }
@@ -6403,7 +5915,6 @@ body {
   margin-right: 12px;
 }
 
-/* Фото без текста — без пузыря, время с галочками поверх фото в тёмной плашке */
 .msg--media-only {
   background: none;
   box-shadow: none;
@@ -6427,13 +5938,11 @@ body {
 .msg--media-only .msg__time .msg-status {
   color: #fff;
 }
-/* У видео внизу кнопки плеера — время наверх */
 .msg--video.msg--media-only .msg__time {
   top: 8px;
   bottom: auto;
 }
 
-/* Трек в сообщении: ▶, название, исполнитель, длительность */
 .msg--with-media:has(.msg__audio) {
   max-width: min(80%, 340px);
 }
@@ -6497,7 +6006,6 @@ body {
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
-/* Фото ещё грузится или не загрузилось — заглушка в цвет пузыря, чтобы не сливалась с фоном чата */
 .msg--photo .msg__media:has(.msg__media-placeholder) {
   background: var(--bubble-in);
 }
@@ -6505,7 +6013,6 @@ body {
   background: var(--bubble-out);
 }
 
-/* Волна голосового: два одинаковых слоя столбиков, верхний (прослушанная часть) открывается плавно */
 .voice__wave {
   position: relative;
 }
@@ -6537,16 +6044,11 @@ body {
   background: var(--accent);
 }
 
-/* Живая волна во время записи — тоже скруглённая и плавная */
 .recording__wave span {
   border-radius: 999px;
   transition: height 0.15s ease;
 }
 
-/* =========================================================
-   «печатает» как в VK: три точки плавно подпрыгивают волной,
-   статус и пузырь появляются мягко, без рывков
-   ========================================================= */
 .typing {
   display: inline-flex;
   align-items: baseline;
@@ -6594,7 +6096,6 @@ body {
   }
 }
 
-/* Шапка чата: «в сети» ↔ «печатает» сменяются плавно */
 .status-swap {
   display: inline-block;
   animation: typing-fade 0.25s ease-out;
@@ -6603,7 +6104,6 @@ body {
   animation: none;
 }
 
-/* Пузырь с точками внизу переписки: выплывает снизу */
 .msg.msg--typing {
   display: inline-flex;
   align-items: center;
@@ -6631,7 +6131,6 @@ body {
   }
 }
 
-/* Кто просит меньше анимации — точки просто мерцают */
 @media (prefers-reduced-motion: reduce) {
   .typing-dots i {
     animation-name: typing-blink;
@@ -6648,7 +6147,6 @@ body {
   }
 }
 
-/* Пузырь «печатает» — поменьше, на своём месте: сразу после последнего сообщения */
 .chat__body > .msg.msg--typing {
   align-self: flex-start;
   height: 26px;
@@ -6663,13 +6161,11 @@ body {
   height: 5px;
 }
 
-/* «печатает» в переписке — только три точки, без пузыря вокруг */
 .chat__body > .msg.msg--typing {
   padding: 0 4px;
   background: none;
   box-shadow: none;
 }
-/* Без пузыря точкам нужен контраст: цвет темнее, в «покое» не исчезают */
 .chat__body > .msg--typing {
   color: var(--text-subhead);
 }
@@ -6694,9 +6190,6 @@ body {
   }
 }
 
-/* =========================================================
-   Отметки в комментариях: ссылка на человека и подсказки после «@»
-   ========================================================= */
 .mention {
   color: var(--accent);
   font-weight: 500;
@@ -6754,10 +6247,6 @@ body {
   background: var(--hover);
 }
 
-/* =========================================================
-   Профиль: «Друзья» и «Подписки». На компьютере — правая колонка,
-   на телефоне — ленты сразу под шапкой, как в мобильном VK
-   ========================================================= */
 .card__header-chevron {
   display: none;
 }
@@ -6767,15 +6256,12 @@ body {
 }
 
 @media (max-width: 960px) {
-  /* Обёртка левой колонки растворяется, а правая колонка встаёт перед фото и стеной */
   .columns--profile {
     gap: 0;
   }
   .columns--profile > .profile-main {
     display: contents;
   }
-  /* «Друзья» и «Подписки» — две плитки рядом, 50 на 50.
-     Если подписок нет, «Друзья» растягиваются на всю ширину */
   .columns--profile > .columns__side {
     order: -1;
     display: flex;
@@ -6789,7 +6275,6 @@ body {
     padding-bottom: 12px;
   }
 
-  /* Заголовок «Друзья 152 ›»: счётчик серым, стрелка прижата вправо */
   .columns--profile > .columns__side .card__header {
     min-height: 42px;
     padding: 0 12px;
@@ -6808,7 +6293,6 @@ body {
     margin-right: -6px;
     color: var(--text-secondary);
   }
-  /* На чужой странице заголовок никуда не ведёт — стрелку не показываем */
   .columns--profile > .columns__side a.card__header--link:not([href]) .card__header-chevron {
     display: none;
   }
@@ -6816,7 +6300,6 @@ body {
     text-decoration: none;
   }
 
-  /* Аватарки внахлёст, без подписей */
   .columns--profile .friends-mini--wide,
   .columns--profile .subs-list {
     display: flex;
@@ -6834,7 +6317,6 @@ body {
     border-radius: 50%;
     line-height: 0;
   }
-  /* 4 аватарки помещаются в плитку даже на узком телефоне (320px) */
   .columns--profile .friends-mini--wide a:nth-child(n + 5),
   .columns--profile .subs-item:nth-child(n + 5) {
     display: none;

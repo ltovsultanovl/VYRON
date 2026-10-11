@@ -1,5 +1,9 @@
 import { memo, useRef, useState, type FormEvent } from "react";
-import type { Comment as CommentType, Person, Post as PostType } from "../types";
+import type {
+  Comment as CommentType,
+  Person,
+  Post as PostType,
+} from "../types";
 import Avatar from "./Avatar";
 import MeAvatar from "./MeAvatar";
 import ConfirmModal from "./ConfirmModal";
@@ -26,13 +30,18 @@ import { formatCount, formatDate, plural } from "../utils";
 const TEXT_LIMIT = 300;
 const COMMENTS_PREVIEW = 2;
 
-const PersonLink = ({ person, className }: { person: Person; className?: string }) => (
+const PersonLink = ({
+  person,
+  className,
+}: {
+  person: Person;
+  className?: string;
+}) => (
   <a href={`#user/${person.id}`} className={className}>
     {person.name}
   </a>
 );
 
-// ---------- Меню «⋯»: в закладки, закрепить (владелец стены), удалить (автор или владелец) ----------
 function PostMenu({
   post,
   canPin,
@@ -111,7 +120,6 @@ function PostMenu({
   );
 }
 
-// ---------- Комментарий ----------
 function Comment({
   comment,
   canDelete,
@@ -129,7 +137,12 @@ function Comment({
   return (
     <div className="comment">
       <a href={`#user/${comment.author.id}`}>
-        <Avatar name={comment.author.name} color={comment.author.color} src={comment.author.avatar} size={32} />
+        <Avatar
+          name={comment.author.name}
+          color={comment.author.color}
+          src={comment.author.avatar}
+          size={32}
+        />
       </a>
       <div className="comment__body">
         <PersonLink person={comment.author} className="comment__name" />
@@ -139,12 +152,18 @@ function Comment({
         <div className="comment__meta">
           <span>{formatDate(comment.createdAt)}</span>
           {!mine && (
-            <button className="comment__reply" onClick={() => onReply(comment.author)}>
+            <button
+              className="comment__reply"
+              onClick={() => onReply(comment.author)}
+            >
               Ответить
             </button>
           )}
           {canDelete && (
-            <button className="comment__reply" onClick={() => onDelete(comment)}>
+            <button
+              className="comment__reply"
+              onClick={() => onDelete(comment)}
+            >
               Удалить
             </button>
           )}
@@ -154,9 +173,6 @@ function Comment({
   );
 }
 
-// ---------- Пост ----------
-// Действия приходят из usePosts: onLike, onComment, onDeleteComment, onDelete, onTogglePin
-// onApprove — опубликовать предложенную новость (есть только в списке «Предложенные»)
 export default memo(function Post({
   post,
   onLike,
@@ -188,35 +204,50 @@ export default memo(function Post({
 
   const { author, owner, community } = post;
   const onOtherWall = owner && owner.id !== author.id;
-  // На стене сообщества: руководители удаляют и закрепляют записи, как владелец своей стены
-  const communityPublisher = !!post.communityId && canPublishIn(post.communityId);
+  const communityPublisher =
+    !!post.communityId && canPublishIn(post.communityId);
   const wallOwner = post.ownerId === myId || communityPublisher;
   const canDelete = author.id === myId || wallOwner;
-  const canPin = !post.suggested && (post.ownerId === myId || (!!post.communityId && canManage(post.communityId)));
-  // От имени сообщества — в шапке сообщество, иначе автор (и «▸ сообщество» на стене группы)
-  const header = post.asCommunity && community
-    ? { href: `#club/${community.id}`, name: community.name, color: community.color, avatar: community.avatar }
-    : { href: `#user/${author.id}`, name: author.name, color: author.color, avatar: author.avatar };
+  const canPin =
+    !post.suggested &&
+    (post.ownerId === myId ||
+      (!!post.communityId && canManage(post.communityId)));
+  const header =
+    post.asCommunity && community
+      ? {
+          href: `#club/${community.id}`,
+          name: community.name,
+          color: community.color,
+          avatar: community.avatar,
+        }
+      : {
+          href: `#user/${author.id}`,
+          name: author.name,
+          color: author.color,
+          avatar: author.avatar,
+        };
 
   const isLong = post.text.length > TEXT_LIMIT;
-  const text = isLong && !expanded ? post.text.slice(0, TEXT_LIMIT).trimEnd() : post.text;
+  const text =
+    isLong && !expanded ? post.text.slice(0, TEXT_LIMIT).trimEnd() : post.text;
 
-  const hidden = showAll ? 0 : Math.max(post.comments.length - COMMENTS_PREVIEW, 0);
+  const hidden = showAll
+    ? 0
+    : Math.max(post.comments.length - COMMENTS_PREVIEW, 0);
   const visibleComments = post.comments.slice(hidden);
 
-  const focusInput = () => requestAnimationFrame(() => inputRef.current?.focus());
+  const focusInput = () =>
+    requestAnimationFrame(() => inputRef.current?.focus());
 
   const toggleComments = () => {
     setCommentsOpen((o) => !o);
     if (!commentsOpen) focusInput();
   };
 
-  // «Ответить» отмечает автора комментария — ему придёт уведомление
   const reply = (author: Person) => {
     if (!commentsOpen) setCommentsOpen(true);
     mentions.replyTo(author);
   };
-
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -235,7 +266,13 @@ export default memo(function Post({
     <article className="card post">
       <header className="post__head">
         <a href={header.href}>
-          <Avatar name={header.name} color={header.color} src={header.avatar} size={40} empty={!post.asCommunity} />
+          <Avatar
+            name={header.name}
+            color={header.color}
+            src={header.avatar}
+            size={40}
+            empty={!post.asCommunity}
+          />
         </a>
         <div className="post__head-text">
           <a href={header.href} className="post__author">
@@ -256,7 +293,9 @@ export default memo(function Post({
             </>
           )}
           <div className="post__time">
-            {post.suggested && <span className="post__suggested">Предложенная новость · </span>}
+            {post.suggested && (
+              <span className="post__suggested">Предложенная новость · </span>
+            )}
             {post.pinned && (
               <span className="post__pinned">
                 <PinIcon size={12} /> запись закреплена ·{" "}
@@ -282,7 +321,10 @@ export default memo(function Post({
           {isLong && !expanded && (
             <>
               {"… "}
-              <button className="post__text-more" onClick={() => setExpanded(true)}>
+              <button
+                className="post__text-more"
+                onClick={() => setExpanded(true)}
+              >
                 Показать ещё
               </button>
             </>
@@ -320,11 +362,19 @@ export default memo(function Post({
           <LikeIcon filled={post.liked} />
           {post.likes > 0 && <span>{formatCount(post.likes)}</span>}
         </button>
-        <button className="pill" onClick={toggleComments} title="Комментировать">
+        <button
+          className="pill"
+          onClick={toggleComments}
+          title="Комментировать"
+        >
           <CommentIcon />
           {post.comments.length > 0 && <span>{post.comments.length}</span>}
         </button>
-        <button className="pill" onClick={() => setSharing(true)} title="Поделиться">
+        <button
+          className="pill"
+          onClick={() => setSharing(true)}
+          title="Поделиться"
+        >
           <ShareIcon />
         </button>
       </footer>
@@ -333,7 +383,8 @@ export default memo(function Post({
         <div className="comments">
           {hidden > 0 && (
             <button className="comments__more" onClick={() => setShowAll(true)}>
-              Показать ещё {hidden} {plural(hidden, ["комментарий", "комментария", "комментариев"])}
+              Показать ещё {hidden}{" "}
+              {plural(hidden, ["комментарий", "комментария", "комментариев"])}
             </button>
           )}
           {visibleComments.map((c) => (
@@ -361,7 +412,12 @@ export default memo(function Post({
                 onSelect={mentions.detect}
                 onKeyDown={mentions.onKeyDown}
               />
-              <EmojiPicker inputRef={inputRef} value={comment} onChange={setComment} size={20} />
+              <EmojiPicker
+                inputRef={inputRef}
+                value={comment}
+                onChange={setComment}
+                size={20}
+              />
               <button
                 className="icon-btn icon-btn--sm comment-form__send"
                 disabled={!comment.trim() || sending}

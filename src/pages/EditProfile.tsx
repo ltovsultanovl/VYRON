@@ -21,7 +21,6 @@ const SECTIONS: { id: Section; label: string }[] = [
   { id: "career", label: "Карьера" },
 ];
 
-// Поля, которые редактируются на этой странице (аватар, обложка и статус — на странице профиля)
 const EDITABLE = [
   "firstName",
   "lastName",
@@ -44,7 +43,6 @@ type Group = "contacts" | "interests" | "education" | "career";
 
 const pick = (obj: Profile) => Object.fromEntries(EDITABLE.map((k) => [k, obj[k]])) as Draft;
 
-// В телефоне оставляем только цифры, +, скобки, дефис и пробел
 const phoneOnly = (value: string) => value.replace(/[^\d+()\- ]/g, "");
 
 const THIS_YEAR = new Date().getFullYear();
@@ -66,7 +64,6 @@ const COUNTRIES = [
   "Другая",
 ];
 
-// ---------- Базовые поля формы ----------
 function Row({ label, error, hint, children }: { label: string; error?: string; hint?: string; children: ReactNode }) {
   return (
     <div className="form-row">
@@ -106,7 +103,6 @@ const TextArea = ({ value, onChange, ...rest }: FieldProps<TextareaHTMLAttribute
   />
 );
 
-// Список: значение типизировано (например, пол — только "male" | "female")
 const Select = <V extends string>({
   value,
   onChange,
@@ -134,7 +130,6 @@ const Select = <V extends string>({
   </select>
 );
 
-// ---------- Страница ----------
 export default function EditProfile({ onNavigate }: { onNavigate: Navigate }) {
   const { profile, updateProfile } = useProfile();
   const showSnackbar = useSnackbar();
@@ -156,7 +151,6 @@ export default function EditProfile({ onNavigate }: { onNavigate: Navigate }) {
     (value: string) =>
       setDraft((d) => ({ ...d, [group]: { ...d[group], [key]: value } }));
 
-  // При смене месяца/года день не должен выйти за пределы месяца (31 февраля и т.п.)
   const setBirth = (key: "birthDay" | "birthMonth" | "birthYear") => (value: string) =>
     setDraft((d) => {
       const next = { ...d, [key]: value };

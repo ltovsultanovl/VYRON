@@ -1,5 +1,10 @@
-// Знак VYRON (векторная копия логотипа). Цвет — currentColor: белый в тёмной теме, тёмный в светлой
-export function LogoMark({ height = 22, className = "" }: { height?: number; className?: string }) {
+function LogoMark({
+  height = 22,
+  className = "",
+}: {
+  height?: number;
+  className?: string;
+}) {
   return (
     <svg
       className={`logo__mark ${className}`}
@@ -15,9 +20,8 @@ export function LogoMark({ height = 22, className = "" }: { height?: number; cla
   );
 }
 
-export const SITE_NAME = "VYRON";
+const SITE_NAME = "VYRON";
 
-// Знак + название, как в шапке
 export default function Logo({ height = 22 }: { height?: number }) {
   return (
     <>

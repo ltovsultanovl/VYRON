@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import * as api from "../api";
 import { useProfile } from "./ProfileContext";
 import { useFriends } from "./FriendsContext";
@@ -7,8 +15,8 @@ import type { Person } from "../types";
 
 interface BlocksValue {
   blocked: api.BlockedPerson[];
-  isBlocked: (userId: string) => boolean; // я заблокировал
-  hasBlockedMe: (userId: string) => boolean; // он заблокировал меня
+  isBlocked: (userId: string) => boolean;
+  hasBlockedMe: (userId: string) => boolean;
   block: (person: Pick<Person, "id" | "firstName">) => Promise<boolean>;
   unblock: (person: Pick<Person, "id" | "firstName">) => Promise<boolean>;
   refreshBlockedMe: () => void;
@@ -16,7 +24,6 @@ interface BlocksValue {
 
 const BlocksContext = createContext<BlocksValue | null>(null);
 
-// Чёрный список: кого заблокировал я и кто заблокировал меня
 export function BlocksProvider({ children }: { children: ReactNode }) {
   const { myId } = useProfile();
   const { reload: reloadFriends } = useFriends();
@@ -27,9 +34,7 @@ export function BlocksProvider({ children }: { children: ReactNode }) {
   const load = useCallback(async () => {
     try {
       setBlocked(await api.fetchBlocked());
-    } catch {
-      /* schema.sql ещё не обновлён — чёрный список просто пуст */
-    }
+    } catch {}
   }, []);
 
   const refreshBlockedMe = useCallback(() => {
@@ -87,11 +92,14 @@ export function BlocksProvider({ children }: { children: ReactNode }) {
     };
   }, [blocked, blockedMe, block, unblock, refreshBlockedMe]);
 
-  return <BlocksContext.Provider value={value}>{children}</BlocksContext.Provider>;
+  return (
+    <BlocksContext.Provider value={value}>{children}</BlocksContext.Provider>
+  );
 }
 
 export function useBlocks() {
   const context = useContext(BlocksContext);
-  if (!context) throw new Error("useBlocks нужно вызывать внутри <BlocksProvider>");
+  if (!context)
+    throw new Error("useBlocks нужно вызывать внутри <BlocksProvider>");
   return context;
 }

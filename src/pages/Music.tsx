@@ -35,7 +35,6 @@ import type { Navigate, Playlist, Track } from "../types";
 const tracksWord = (n: number) =>
   plural(n, ["аудиозапись", "аудиозаписи", "аудиозаписей"]);
 
-// «Слушать» и «Перемешать» над списком
 function ListActions({ tracks }: { tracks: Track[] }) {
   const player = usePlayer();
   if (!tracks.length) return null;
@@ -66,7 +65,6 @@ function Empty({ children }: { children: ReactNode }) {
   );
 }
 
-// ---------- Моя музыка ----------
 function MyMusic({ onUpload }: { onUpload: () => void }) {
   const music = useMusic();
   const [query, setQuery] = useState("");
@@ -111,7 +109,6 @@ function MyMusic({ onUpload }: { onUpload: () => void }) {
   );
 }
 
-// ---------- Поиск по всей музыке ----------
 function SearchMusic({ initialQuery }: { initialQuery: string }) {
   const [query, setQuery] = useState(initialQuery ?? "");
   const q = useDebounced(query.trim(), 300);
@@ -150,7 +147,6 @@ function SearchMusic({ initialQuery }: { initialQuery: string }) {
   );
 }
 
-// ---------- Плитки плейлистов ----------
 function PlaylistGrid({ playlists, empty = null }: { playlists: Playlist[]; empty?: ReactNode }) {
   if (!playlists.length) return empty;
   return (
@@ -212,7 +208,6 @@ function MyPlaylists() {
   );
 }
 
-// ---------- Страница плейлиста ----------
 function PlaylistPage({ id, onNavigate }: { id: number; onNavigate: Navigate }) {
   const { myId } = useProfile();
   const music = useMusic();
@@ -345,7 +340,6 @@ function PlaylistPage({ id, onNavigate }: { id: number; onNavigate: Navigate }) 
   );
 }
 
-// ---------- Музыка другого человека ----------
 function UserMusic({ userId }: { userId: string }) {
   const person = useUserProfile(userId);
   const tracks = useResource(() => fetchUserMusic(userId), [userId]);
@@ -385,8 +379,6 @@ function UserMusic({ userId }: { userId: string }) {
   );
 }
 
-// ---------- Раздел ----------
-// #music — моя музыка, #music/playlists, #music/search?q=, #music/playlist/<id>, #music/user/<id>
 export default function Music({
   section,
   param,

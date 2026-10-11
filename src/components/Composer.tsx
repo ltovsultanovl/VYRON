@@ -5,15 +5,16 @@ import { useSnackbar } from "./Snackbar";
 import { useFilePicker } from "../hooks";
 import { errorText, readImage } from "../utils";
 
-// Новая запись: текст и, по желанию, одна фотография.
-// onPublish({ text, imageDataUrl }) → true, если опубликовано
 export default function Composer({
   onPublish,
   autoFocus = false,
   onCancel,
   placeholder = "Что у вас нового?",
 }: {
-  onPublish: (data: { text: string; imageDataUrl: string | null }) => Promise<boolean>;
+  onPublish: (data: {
+    text: string;
+    imageDataUrl: string | null;
+  }) => Promise<boolean>;
   autoFocus?: boolean;
   onCancel?: () => void;
   placeholder?: string;
@@ -27,15 +28,12 @@ export default function Composer({
   const expanded = focused || text.length > 0 || image;
   const canPublish = (text.trim() || image) && !sending;
 
-  // Пока открыто окно выбора файла, поле теряет фокус — это не «передумал писать».
-  // Раньше на этом месте пустой композер закрывался вместе с выбором файла, и фото не прикреплялось
   const picking = useRef(false);
   const openPicker = () => {
     picking.current = true;
     window.addEventListener(
       "focus",
       () => {
-        // Окно выбора закрыто (выбрали файл или отменили) — возвращаем курсор в поле
         setTimeout(() => {
           picking.current = false;
           ref.current?.focus();
@@ -112,7 +110,11 @@ export default function Composer({
       {image && (
         <div className="composer__attachment">
           <img src={image} alt="" />
-          <button className="media__photo-delete" onClick={() => setImage(null)} title="Убрать фото">
+          <button
+            className="media__photo-delete"
+            onClick={() => setImage(null)}
+            title="Убрать фото"
+          >
             <CloseIcon size={16} />
           </button>
         </div>

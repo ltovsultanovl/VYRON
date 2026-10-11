@@ -10,12 +10,11 @@ import {
 } from "../api";
 
 const RESEND_SECONDS = 60;
-const MIN_PASSWORD = 8; // как в настройках Supabase (Authentication → Password)
+const MIN_PASSWORD = 8;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Mode = "login" | "register" | "reset" | "link";
 
-// Общие для всех форм входа: почта (чтобы не вводить заново) и переход между режимами
 interface FormProps {
   email: string;
   setEmail: (email: string) => void;
@@ -24,7 +23,6 @@ interface FormProps {
 
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
 
-// Поле пароля с кнопкой «показать»
 export function PasswordInput({
   value,
   onChange,
@@ -64,7 +62,6 @@ export function PasswordInput({
   );
 }
 
-// Общая логика формы: загрузка + текст ошибки
 function useSubmit() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -118,7 +115,6 @@ const LinkButton = ({ onClick, children, disabled }: { onClick: () => void; chil
   </button>
 );
 
-// ---------- Вход по паролю ----------
 function Login({ email, setEmail, go }: FormProps) {
   const [password, setPassword] = useState("");
   const { loading, error, setError, run } = useSubmit();
@@ -169,7 +165,6 @@ function Login({ email, setEmail, go }: FormProps) {
   );
 }
 
-// ---------- Регистрация ----------
 function Register({ email, setEmail, go }: FormProps) {
   const [password, setPassword] = useState("");
   const [repeat, setRepeat] = useState("");
@@ -186,7 +181,6 @@ function Register({ email, setEmail, go }: FormProps) {
     if (password !== repeat) return setError("Пароли не совпадают");
     run(async () => {
       const { needsConfirmation } = await signUpWithPassword(address, password);
-      // Без подтверждения почты Supabase сразу создаёт сессию — дальше форма «Как вас зовут?»
       if (needsConfirmation) setConfirmSentTo(address);
     });
   };
@@ -252,7 +246,6 @@ function Register({ email, setEmail, go }: FormProps) {
   );
 }
 
-// ---------- Восстановление пароля ----------
 function Reset({ email, setEmail, go }: FormProps) {
   const [sentTo, setSentTo] = useState<string | null>(null);
   const { loading, error, setError, run } = useSubmit();
@@ -314,7 +307,6 @@ function Reset({ email, setEmail, go }: FormProps) {
   );
 }
 
-// ---------- Вход по ссылке / коду из письма (запасной способ) ----------
 function MagicLink({ email, setEmail, go }: FormProps) {
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [code, setCode] = useState("");
@@ -423,10 +415,9 @@ function MagicLink({ email, setEmail, go }: FormProps) {
   );
 }
 
-// Экран входа: пароль (основной способ), регистрация, восстановление, ссылка из письма
 export default function AuthPage() {
   const [mode, setMode] = useState<Mode>("login");
-  const [email, setEmail] = useState(""); // общая между режимами, чтобы не вводить заново
+  const [email, setEmail] = useState("");
   const props = { email, setEmail, go: setMode };
 
   if (mode === "register") return <Register key="register" {...props} />;

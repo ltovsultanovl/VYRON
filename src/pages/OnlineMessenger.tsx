@@ -15,7 +15,6 @@ const messageState = (m: MessageRow, out: boolean): MessageState | undefined => 
   return m.read_at ? "read" : "sent";
 };
 
-// Мессенджер на Supabase: подключение, ошибки, пустой список
 export default function OnlineMessenger() {
   const {
     status,
@@ -57,17 +56,14 @@ export default function OnlineMessenger() {
     };
   }, [togglePin, toggleArchive, markUnread, block, unblock, dialogs, clearChat, deleteChat]);
 
-  // Готовые сообщения кешируем по исходной строке: если строка та же, отдаём тот же объект —
-  // тогда «печатает…», «в сети» и новые сообщения не перерисовывают уже показанные
   const cache = useRef(new WeakMap<MessageRow, { url: string | null; view: ViewMessage<MessageRow> }>());
 
-  // Данные Supabase → формат, который понимает Messenger
   const view = useMemo(
     () =>
       dialogs.map((d): ViewDialog<MessageRow> => ({
         id: d.person.id,
         person: d.person,
-        textOnly: !!d.isCommunity, // сообществу пишут только текстом
+        textOnly: !!d.isCommunity,
         pinned: d.pinned,
         archived: d.archived,
         markedUnread: d.markedUnread,
@@ -98,7 +94,6 @@ export default function OnlineMessenger() {
             day: formatDay(m.created_at),
             state: messageState(m, out),
             listened: m.attachment_type === "voice" ? !!m.listened_at : undefined,
-            // «Удалить у всех» — своё, уже на сервере и не старше суток (как в VK)
             deletable: !d.isCommunity,
             canDeleteForAll:
               out &&
@@ -114,18 +109,12 @@ export default function OnlineMessenger() {
   );
 
   const active = view.find((d) => d.id === activePeerId) ?? view[0] ?? null;
-  // Чат уже выбран до входа (кнопка «Написать сообщение») — на телефоне сразу открываем его
   const [startInChat] = useState(() => !!activePeerId);
 
-  // Закрепляем первый чат как выбранный: иначе при подгрузке друзей список пересортируется
-  // и открытый чат сам переключится на другой — посреди набора текста или записи голосового
   useEffect(() => {
     if (!activePeerId && view[0]) setActivePeerId(view[0].id);
   }, [activePeerId, view, setActivePeerId]);
 
-  // Прочитано — только когда собеседник действительно видит чат: он открыт и вкладка на экране.
-  // Свернул окно — новые сообщения ждут; вернулся — сразу отмечаем (у отправителя станет ✓✓)
-  // Открыли чат — заодно проверяем, не заблокировал ли нас собеседник
   useEffect(() => {
     if (active?.id) refreshBlockedMe();
   }, [active?.id, refreshBlockedMe]);
@@ -162,7 +151,7 @@ export default function OnlineMessenger() {
       activeId={active?.id}
       onOpen={(id) => {
         setActivePeerId(id);
-        clearMarkedUnread(id); // открыли чат — отметка «непрочитано» больше не нужна
+        clearMarkedUnread(id);
       }}
       onSend={(id, text, file, voice) => {
         clearMarkedUnread(id);

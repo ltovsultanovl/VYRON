@@ -1,6 +1,5 @@
 import Splash from "../components/Splash";
 
-// Supabase не подключён: без сервера нет пользователей, поэтому объясняем, что сделать
 export default function SetupNeeded() {
   return (
     <Splash>

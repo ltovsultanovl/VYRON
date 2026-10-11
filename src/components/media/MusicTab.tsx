@@ -10,7 +10,6 @@ import type { Person, Track } from "../../types";
 
 const PREVIEW = 5;
 
-// Вкладка «Музыка» в профиле: первые треки человека и ссылка на всю музыку
 export default function MusicTab({
   owner,
   isMe,

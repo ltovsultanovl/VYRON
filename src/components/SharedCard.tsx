@@ -1,7 +1,15 @@
 import Avatar from "./Avatar";
 import { useProfile } from "../context/ProfileContext";
 import { useResource } from "../resources";
-import { fetchAudio, fetchCommunity, fetchPhoto, fetchPlaylist, fetchPost, fetchProfile, fetchVideo } from "../api";
+import {
+  fetchAudio,
+  fetchCommunity,
+  fetchPhoto,
+  fetchPlaylist,
+  fetchPost,
+  fetchProfile,
+  fetchVideo,
+} from "../api";
 import { formatDuration, viewsLabel } from "./video/format";
 import { bg } from "../data";
 import TrackList from "./music/TrackList";
@@ -21,7 +29,6 @@ import type {
   Video,
 } from "../types";
 
-// Загруженное содержимое: тип + само значение (null — удалено или недоступно)
 type SharedData =
   | { type: "post"; value: Post | null }
   | { type: "photo"; value: SharedPhoto | null }
@@ -31,7 +38,11 @@ type SharedData =
   | { type: "video"; value: Video | null }
   | { type: "profile"; value: Profile | null };
 
-const load = async (type: SharedType, id: string | number, myId: string): Promise<SharedData> => {
+const load = async (
+  type: SharedType,
+  id: string | number,
+  myId: string,
+): Promise<SharedData> => {
   switch (type) {
     case "post":
       return { type, value: await fetchPost(id, myId) };
@@ -50,7 +61,6 @@ const load = async (type: SharedType, id: string | number, myId: string): Promis
   }
 };
 
-// Один и тот же пост в переписке могут прислать несколько раз — грузим его один раз
 const cache = new Map<string, SharedData>();
 
 function useShared(type: SharedType, id: string | number, myId: string) {
@@ -74,10 +84,13 @@ const GONE: Record<SharedType, string> = {
   video: "Видео удалено",
 };
 
-// Карточка того, чем поделились в чате: запись, фото, страница, сообщество, трек, плейлист, видео
 export default function SharedCard({ shared }: { shared: Shared }) {
   const { myId } = useProfile();
-  const { data, loading, error, reload } = useShared(shared.type, shared.id, myId);
+  const { data, loading, error, reload } = useShared(
+    shared.type,
+    shared.id,
+    myId,
+  );
 
   if (loading && !data) {
     return (
@@ -94,24 +107,43 @@ export default function SharedCard({ shared }: { shared: Shared }) {
     );
   }
   if (!data?.value) {
-    return <div className="shared shared--state">{GONE[shared.type]} или недоступна</div>;
+    return (
+      <div className="shared shared--state">
+        {GONE[shared.type]} или недоступна
+      </div>
+    );
   }
 
   if (data.type === "post") {
     const post = data.value;
-    // Запись сообщества ведёт в сообщество, запись на стене — на страницу её владельца
-    const href = post.communityId ? `#club/${post.communityId}` : `#user/${post.ownerId}`;
+    const href = post.communityId
+      ? `#club/${post.communityId}`
+      : `#user/${post.ownerId}`;
     return (
       <a className="shared" href={href}>
         <span className="shared__head">
-          <Avatar name={post.author.name} color={post.author.color} src={post.author.avatar} size={32} />
+          <Avatar
+            name={post.author.name}
+            color={post.author.color}
+            src={post.author.avatar}
+            size={32}
+          />
           <span>
             <span className="shared__name">{post.author.name}</span>
-            <span className="shared__meta">Запись · {formatDate(post.createdAt)}</span>
+            <span className="shared__meta">
+              Запись · {formatDate(post.createdAt)}
+            </span>
           </span>
         </span>
         {post.text && <span className="shared__text">{post.text}</span>}
-        {post.image && <img className="shared__image" src={post.image} alt="" loading="lazy" />}
+        {post.image && (
+          <img
+            className="shared__image"
+            src={post.image}
+            alt=""
+            loading="lazy"
+          />
+        )}
       </a>
     );
   }
@@ -120,11 +152,18 @@ export default function SharedCard({ shared }: { shared: Shared }) {
     const v = data.value;
     return (
       <a className="shared shared--video" href={`#video/${v.id}`}>
-        <span className="shared__video-poster" style={v.poster ? { background: bg(v.poster, "#000") } : undefined}>
+        <span
+          className="shared__video-poster"
+          style={v.poster ? { background: bg(v.poster, "#000") } : undefined}
+        >
           <span className="video-card__play">
             <PlayIcon size={28} />
           </span>
-          {v.duration > 0 && <span className="video-card__duration">{formatDuration(v.duration)}</span>}
+          {v.duration > 0 && (
+            <span className="video-card__duration">
+              {formatDuration(v.duration)}
+            </span>
+          )}
         </span>
         <span className="shared__name">{v.title}</span>
         <span className="shared__meta">{viewsLabel(v.views)}</span>
@@ -132,7 +171,6 @@ export default function SharedCard({ shared }: { shared: Shared }) {
     );
   }
 
-  // Трек играет прямо из сообщения
   if (data.type === "audio") {
     return (
       <div className="shared shared--audio">
@@ -145,13 +183,17 @@ export default function SharedCard({ shared }: { shared: Shared }) {
     const p = data.value;
     return (
       <a className="shared shared--profile" href={`#music/playlist/${p.id}`}>
-        <span className="shared__playlist-cover" style={{ background: coverGradient(p.title) }}>
+        <span
+          className="shared__playlist-cover"
+          style={{ background: coverGradient(p.title) }}
+        >
           <PlaylistIcon size={24} />
         </span>
         <span>
           <span className="shared__name">{p.title}</span>
           <span className="shared__meta">
-            Плейлист · {p.tracks.length} {plural(p.tracks.length, ["трек", "трека", "треков"])}
+            Плейлист · {p.tracks.length}{" "}
+            {plural(p.tracks.length, ["трек", "трека", "треков"])}
           </span>
           <span className="shared__open">Открыть плейлист</span>
         </span>
@@ -163,12 +205,19 @@ export default function SharedCard({ shared }: { shared: Shared }) {
     const c = data.value;
     return (
       <a className="shared shared--profile" href={`#club/${c.id}`}>
-        <Avatar name={c.name} color={c.color} src={c.avatar} size={48} empty={false} />
+        <Avatar
+          name={c.name}
+          color={c.color}
+          src={c.avatar}
+          size={48}
+          empty={false}
+        />
         <span>
           <span className="shared__name">{c.name}</span>
           <span className="shared__meta">
             {c.isPage ? "Публичная страница" : "Группа"}
-            {c.membersCount != null && ` · ${c.membersCount} ${c.isPage ? "подписчиков" : "участников"}`}
+            {c.membersCount != null &&
+              ` · ${c.membersCount} ${c.isPage ? "подписчиков" : "участников"}`}
           </span>
           <span className="shared__open">Открыть сообщество</span>
         </span>
@@ -179,9 +228,19 @@ export default function SharedCard({ shared }: { shared: Shared }) {
   if (data.type === "photo") {
     const photo = data.value;
     return (
-      <a className="shared" href={photo.owner ? `#user/${photo.owner.id}` : "#photos"}>
-        <img className="shared__image shared__image--photo" src={photo.src} alt="" loading="lazy" />
-        <span className="shared__meta">Фотография{photo.owner && ` · ${photo.owner.name}`}</span>
+      <a
+        className="shared"
+        href={photo.owner ? `#user/${photo.owner.id}` : "#photos"}
+      >
+        <img
+          className="shared__image shared__image--photo"
+          src={photo.src}
+          alt=""
+          loading="lazy"
+        />
+        <span className="shared__meta">
+          Фотография{photo.owner && ` · ${photo.owner.name}`}
+        </span>
       </a>
     );
   }
@@ -189,10 +248,17 @@ export default function SharedCard({ shared }: { shared: Shared }) {
   const profile = data.value;
   return (
     <a className="shared shared--profile" href={`#user/${profile.id}`}>
-      <Avatar name={fullName(profile)} color={profile.color} src={profile.avatar} size={48} />
+      <Avatar
+        name={fullName(profile)}
+        color={profile.color}
+        src={profile.avatar}
+        size={48}
+      />
       <span>
         <span className="shared__name">{fullName(profile)}</span>
-        <span className="shared__meta">{profile.contacts.city || "Страница VYRON"}</span>
+        <span className="shared__meta">
+          {profile.contacts.city || "Страница VYRON"}
+        </span>
         <span className="shared__open">Открыть страницу</span>
       </span>
     </a>

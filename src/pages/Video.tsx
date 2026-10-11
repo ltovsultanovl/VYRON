@@ -121,7 +121,6 @@ function UserVideos({
   );
 }
 
-// #video — мои видео, #video/search?q=, #video/user/<id>, #video/<id> — открыть ролик
 export default function Video({
   section,
   param,
@@ -136,20 +135,19 @@ export default function Video({
   const { myId } = useProfile();
   const library = useVideos();
   const [upload, setUpload] = useState<{ file: File | null } | null>(null);
-  const [opened, setOpened] = useState<VideoType | null>(null); // ролик из списка
-  const [version, setVersion] = useState(0); // после удаления — перечитать поиск
+  const [opened, setOpened] = useState<VideoType | null>(null);
+  const [version, setVersion] = useState(0);
   const [dragOver, dropProps] = useFileDrop(([file]) => file && setUpload({ file }));
   const directId = /^\d+$/.test(section) ? Number(section) : null;
   const userId = section === "user" && param !== myId ? param : null;
   const current = userId ? "user" : section === "search" ? "search" : "all";
   const base = current === "search" ? "video/search" : current === "user" ? `video/user/${userId}` : "video";
-  // Открыт из списка (есть данные) или по прямой ссылке #video/<id> (только id)
   const viewingId = opened?.id ?? directId;
 
   const open = (video: VideoType) => setOpened(video);
   const close = () => {
     setOpened(null);
-    if (current !== "all") setVersion((v) => v + 1); // просмотры и лайки в списке поиска — свежие
+    if (current !== "all") setVersion((v) => v + 1);
     if (directId) onNavigate(base);
   };
 

@@ -70,7 +70,6 @@ function TrackMenu({
   );
 }
 
-// Список треков. Клик по обложке/строке включает весь список с этого трека
 export default function TrackList({
   tracks,
   playlist,

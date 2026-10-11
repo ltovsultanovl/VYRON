@@ -4,7 +4,7 @@ import type { Album, AlbumPrivacy } from "../../types";
 
 const TITLE_LIMIT = 64;
 
-export const PRIVACY_OPTIONS: { id: AlbumPrivacy; label: string }[] = [
+const PRIVACY_OPTIONS: { id: AlbumPrivacy; label: string }[] = [
   { id: "all", label: "Все пользователи" },
   { id: "friends", label: "Только друзья" },
   { id: "me", label: "Только я" },
@@ -12,7 +12,6 @@ export const PRIVACY_OPTIONS: { id: AlbumPrivacy; label: string }[] = [
 export const privacyLabel = (id: AlbumPrivacy) =>
   PRIVACY_OPTIONS.find((o) => o.id === id)?.label ?? "";
 
-// Создание и редактирование альбома: название, описание, «Кто может просматривать этот альбом?»
 export default function AlbumModal({
   album,
   onSave,

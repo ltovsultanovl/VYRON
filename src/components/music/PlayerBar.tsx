@@ -12,7 +12,6 @@ import {
 } from "../Icons";
 import { usePlayer, usePlayerTime } from "../../context/PlayerContext";
 
-// Полоса прогресса: перемотка кликом и перетаскиванием
 function Progress() {
   const { seek } = usePlayer();
   const { time, duration } = usePlayerTime();
@@ -83,7 +82,6 @@ function Volume() {
   );
 }
 
-// Плеер как в шапке раздела музыки VK: обложка, название, кнопки, прогресс, громкость
 export default function PlayerBar({ compact = false }: { compact?: boolean }) {
   const player = usePlayer();
   const { current, playing, loading, shuffle, repeat } = player;

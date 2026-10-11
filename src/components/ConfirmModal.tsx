@@ -1,6 +1,5 @@
 import Modal from "./Modal";
 
-// Подтверждение опасного действия: «Удалить фотографию?»
 export default function ConfirmModal({
   title,
   text,

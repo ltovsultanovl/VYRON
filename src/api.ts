@@ -1,5 +1,3 @@
-// Все запросы к Supabase в одном месте: компоненты работают с привычными
-// объектами (profile, person, post, photo), а не с колонками базы
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
 import { emptyProfileInfo } from "./data";
@@ -33,8 +31,6 @@ import type {
   Track,
   Video,
 } from "./types";
-
-// ---------- Строки базы (то, что приходит из Supabase) ----------
 
 interface PersonRow {
   id: string;
@@ -168,9 +164,6 @@ interface SupabaseError {
   code?: string;
 }
 
-// ---------- Ошибки ----------
-
-// Понятный текст для частых ошибок Supabase
 export const explainError = (error: unknown): string => {
   const err = error as SupabaseError | null | undefined;
   const text = err?.message ?? String(error);
@@ -201,14 +194,10 @@ export const explainError = (error: unknown): string => {
   return text;
 };
 
-// Supabase возвращает { data, error } — превращаем ошибку в исключение.
-// T — тип строк, которые мы запросили в select(...): supabase-js без схемы базы выводит его лишь приблизительно
 const unwrap = <T = unknown>({ data, error }: { data?: unknown; error: unknown }): T => {
   if (error) throw error;
   return data as T;
 };
-
-// ---------- Вход по ссылке / коду из письма ----------
 
 export const sendLoginEmail = (email: string) =>
   supabase.auth
@@ -220,16 +209,12 @@ export const verifyLoginCode = (email: string, token: string) =>
 
 export const signOut = () => supabase.auth.signOut().then(unwrap);
 
-// ---------- Вход по паролю ----------
-
 const redirectTo = () => location.origin + location.pathname;
 
-// Если в Supabase включено «Confirm email», сессии сразу не будет — нужно подтвердить почту
 export const signUpWithPassword = async (email: string, password: string) => {
   const data = unwrap<{ user: User | null; session: Session | null }>(
     await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo() } }),
   );
-  // Supabase не сообщает, что почта занята (защита от перебора): у такого «пользователя» нет identities
   if (data.user && !data.session && data.user.identities?.length === 0) {
     throw new Error("User already registered");
   }
@@ -244,13 +229,10 @@ export const sendPasswordReset = (email: string) =>
 
 export const setNewPassword = (password: string) => supabase.auth.updateUser({ password }).then(unwrap);
 
-// ---------- Профили ----------
-
 const PERSON_FIELDS = "id, first_name, last_name, color, avatar_url, info";
 const PROFILE_FIELDS = "id, first_name, last_name, color, status, avatar_url, cover_url, info, created_at";
 const INFO_KEYS = Object.keys(emptyProfileInfo) as (keyof ProfileInfo)[];
 
-// Краткие данные о человеке — для аватаров, списков, постов
 function toPerson(row: PersonRow): Person;
 function toPerson(row: PersonRow | null | undefined): Person | null;
 function toPerson(row: PersonRow | null | undefined): Person | null {
@@ -267,7 +249,6 @@ function toPerson(row: PersonRow | null | undefined): Person | null {
   };
 }
 
-// Полный профиль — для страницы пользователя и редактирования
 const fromProfileRow = (row: ProfileRow | null): Profile | null => {
   if (!row) return null;
   const info: Partial<ProfileInfo> = row.info ?? {};
@@ -327,8 +308,6 @@ export const fetchPeople = async (ids: string[]): Promise<Person[]> => {
   return unwrap<PersonRow[]>(await supabase.from("profiles").select(PERSON_FIELDS).in("id", ids)).map((r) => toPerson(r));
 };
 
-// Поиск: по точной почте (если в запросе есть @), иначе по имени и фамилии;
-// пустой запрос — недавно зарегистрированные
 export const searchPeople = async (query: string): Promise<Person[]> => {
   if (query.includes("@")) {
     const rows = unwrap<PersonRow[]>(await supabase.rpc("find_profile_by_email", { p_email: query.trim() }));
@@ -342,11 +321,8 @@ export const searchPeople = async (query: string): Promise<Person[]> => {
   return unwrap<PersonRow[]>(await request).map((r) => toPerson(r));
 };
 
-// ---------- Картинки в Storage ----------
-
 const BUCKET = "media";
 
-// dataURL (после сжатия в readImage) → файл в папке пользователя → публичная ссылка
 export const uploadImage = async (userId: string, dataUrl: string, folder: string) => {
   const blob = dataUrlToBlob(dataUrl);
   const path = `${userId}/${folder}/${crypto.randomUUID()}.jpg`;
@@ -360,21 +336,16 @@ export const uploadImage = async (userId: string, dataUrl: string, folder: strin
   return { path, url: data.publicUrl };
 };
 
-// Путь файла по его публичной ссылке (для удаления старого аватара/обложки)
 const pathFromUrl = (url: string | null | undefined) => url?.split(`/object/public/${BUCKET}/`)[1] ?? null;
 
-// Удаление файла — «по возможности»: если не вышло, остаётся только лишний файл в хранилище
 export const removeImage = async (pathOrUrl: string | null | undefined) => {
   const path = pathOrUrl?.startsWith("http") ? pathFromUrl(pathOrUrl) : pathOrUrl;
   if (path) await supabase.storage.from(BUCKET).remove([path]);
 };
 
-// ---------- Сообщества ----------
-
 const COMMUNITY_FIELDS =
   "id, name, kind, access, wall, category, status, description, website, city, color, avatar_url, cover_url, messages_enabled, created_by, created_at";
 
-// Коротко — для постов, списков, чата
 function toCommunityBrief(row: CommunityBriefRow): CommunityBrief;
 function toCommunityBrief(row: CommunityBriefRow | null | undefined): CommunityBrief | null;
 function toCommunityBrief(row: CommunityBriefRow | null | undefined): CommunityBrief | null {
@@ -382,19 +353,19 @@ function toCommunityBrief(row: CommunityBriefRow | null | undefined): CommunityB
 }
 
 const toCommunity = (row: CommunityRow): Community => ({
-    ...toCommunityBrief(row),
-    access: row.access ?? "open",
-    wall: row.wall ?? "limited",
-    category: row.category ?? "",
-    status: row.status ?? "",
-    description: row.description ?? "",
-    website: row.website ?? "",
-    city: row.city ?? "",
-    cover: row.cover_url,
-    messagesEnabled: row.messages_enabled ?? true,
-    createdBy: row.created_by,
-    createdAt: row.created_at,
-  });
+  ...toCommunityBrief(row),
+  access: row.access ?? "open",
+  wall: row.wall ?? "limited",
+  category: row.category ?? "",
+  status: row.status ?? "",
+  description: row.description ?? "",
+  website: row.website ?? "",
+  city: row.city ?? "",
+  cover: row.cover_url,
+  messagesEnabled: row.messages_enabled ?? true,
+  createdBy: row.created_by,
+  createdAt: row.created_at,
+});
 
 const toCommunityRow = (c: Community) => ({
   name: c.name,
@@ -421,7 +392,6 @@ const countMembers = async (communityId: number, status: MemberStatus = "member"
   return count ?? 0;
 };
 
-// Сообщество + моё место в нём ({ role, status } или null) + число участников
 export const fetchCommunity = async (id: number | string, myId: string): Promise<CommunityDetails | null> => {
   const row = unwrap<CommunityRow | null>(await supabase.from("communities").select(COMMUNITY_FIELDS).eq("id", Number(id)).maybeSingle());
   if (!row) return null;
@@ -433,12 +403,11 @@ export const fetchCommunity = async (id: number | string, myId: string): Promise
       .eq("user_id", myId)
       .maybeSingle()
       .then((res) => unwrap<Membership | null>(res)),
-    countMembers(row.id).catch(() => null), // у закрытой группы чужим число не видно
+    countMembers(row.id).catch(() => null),
   ]);
   return { ...toCommunity(row), membership: mine, membersCount };
 };
 
-// Мои сообщества: где я участник, куда подал заявку, куда приглашён
 export const fetchMyCommunities = async (myId: string): Promise<MyCommunity[]> =>
   unwrap<{ role: CommunityRole; status: MemberStatus; community: CommunityRow | null }[]>(
     await supabase
@@ -450,7 +419,6 @@ export const fetchMyCommunities = async (myId: string): Promise<MyCommunity[]> =
     .filter((r) => r.community)
     .map((r) => ({ community: toCommunity(r.community!), role: r.role, status: r.status }));
 
-// Подписки другого человека (то, что видно мне по правилам доступа)
 export const fetchUserCommunities = async (userId: string): Promise<CommunityBrief[]> =>
   unwrap<{ community: CommunityBriefRow | null }[]>(
     await supabase
@@ -466,7 +434,6 @@ export const fetchUserCommunities = async (userId: string): Promise<CommunityBri
 export const searchCommunities = async (query: string): Promise<Community[]> => {
   let request = supabase.from("communities").select(COMMUNITY_FIELDS).order("created_at", { ascending: false }).limit(50);
   const q = query.trim().replace(/[%_,()]/g, "");
-  // Ищем по названию, тематике и статусу, как в VK
   if (q) request = request.or(`name.ilike.%${q}%,category.ilike.%${q}%,status.ilike.%${q}%`);
   return unwrap<CommunityRow[]>(await request).map(toCommunity);
 };
@@ -497,7 +464,6 @@ export const saveCommunity = async (community: Community) =>
 
 export const deleteCommunity = async (id: number) => unwrap(await supabase.from("communities").delete().eq("id", id));
 
-// Участники (status: member | requested | invited) с профилями
 export const fetchCommunityMembers = async (communityId: number, status: MemberStatus = "member"): Promise<CommunityMember[]> =>
   unwrap<{ role: CommunityRole; status: MemberStatus; created_at: string; user: PersonRow }[]>(
     await supabase
@@ -511,7 +477,7 @@ export const fetchCommunityMembers = async (communityId: number, status: MemberS
 
 const rpc = async <T = null>(name: string, args: Record<string, unknown>) => unwrap<T>(await supabase.rpc(name, args));
 
-export const joinCommunity = (id: number) => rpc<MemberStatus>("join_community", { c: id }); // → member | requested
+export const joinCommunity = (id: number) => rpc<MemberStatus>("join_community", { c: id });
 export const leaveCommunity = (id: number) => rpc("leave_community", { c: id });
 export const inviteToCommunity = (id: number, userId: string) => rpc("invite_to_community", { c: id, u: userId });
 export const answerCommunityRequest = (id: number, userId: string, accept: boolean) =>
@@ -519,8 +485,6 @@ export const answerCommunityRequest = (id: number, userId: string, accept: boole
 export const setCommunityRole = (id: number, userId: string, role: CommunityRole) =>
   rpc("set_community_role", { c: id, u: userId, r: role });
 export const removeFromCommunity = (id: number, userId: string) => rpc("remove_from_community", { c: id, u: userId });
-
-// ---------- Сообщения сообществу ----------
 
 type CommunityMessageDbRow = Omit<CommunityMessageRow, "community" | "user"> & {
   community?: CommunityBriefRow | null;
@@ -533,7 +497,6 @@ const toCommunityMessage = (r: CommunityMessageDbRow): CommunityMessageRow => ({
   user: undefined,
 });
 
-// Мои переписки с сообществами (я — собеседник)
 export const fetchMyCommunityMessages = async (myId: string): Promise<CommunityMessageRow[]> =>
   unwrap<CommunityMessageDbRow[]>(
     await supabase
@@ -543,10 +506,9 @@ export const fetchMyCommunityMessages = async (myId: string): Promise<CommunityM
       .order("created_at", { ascending: false })
       .limit(1000),
   )
-    .reverse() // берём 1000 последних, показываем по порядку
+    .reverse()
     .map(toCommunityMessage);
 
-// Входящие сообщества — для его руководителей
 export const fetchCommunityInbox = async (communityId: number): Promise<CommunityMessageRow[]> =>
   unwrap<CommunityMessageDbRow[]>(
     await supabase
@@ -578,7 +540,6 @@ export const sendCommunityMessage = async ({
       .single(),
   );
 
-// Отметить прочитанными сообщения другой стороны в переписке userId ↔ сообщество
 export const markCommunityMessagesRead = async ({
   communityId,
   userId,
@@ -601,13 +562,10 @@ export const markCommunityMessagesRead = async ({
 export const fetchCommunityBrief = async (id: number | string) =>
   toCommunityBrief(unwrap<CommunityBriefRow | null>(await supabase.from("communities").select(COMMUNITY_BRIEF).eq("id", Number(id)).maybeSingle()));
 
-// ---------- Друзья ----------
-
 const FRIENDSHIP_FIELDS = `requester_id, addressee_id, status, created_at,
   requester:profiles!friendships_requester_id_fkey(${PERSON_FIELDS}),
   addressee:profiles!friendships_addressee_id_fkey(${PERSON_FIELDS})`;
 
-// Все связи пользователя: друзья, входящие и исходящие заявки
 export const fetchFriendships = async (userId: string): Promise<Friendship[]> =>
   unwrap<{ requester_id: string; status: string; created_at: string; requester: PersonRow; addressee: PersonRow }[]>(
     await supabase
@@ -636,7 +594,6 @@ export const acceptFriendRequest = async (myId: string, userId: string) =>
       .eq("addressee_id", myId),
   );
 
-// Отклонить, отменить заявку или удалить из друзей — одна операция
 export const removeFriendship = async (myId: string, userId: string) =>
   unwrap(
     await supabase
@@ -646,8 +603,6 @@ export const removeFriendship = async (myId: string, userId: string) =>
         `and(requester_id.eq.${myId},addressee_id.eq.${userId}),and(requester_id.eq.${userId},addressee_id.eq.${myId})`,
       ),
   );
-
-// ---------- Посты ----------
 
 const COMMUNITY_BRIEF = "id, name, kind, color, avatar_url";
 
@@ -661,7 +616,7 @@ const POST_FIELDS = `id, text, image_url, pinned, created_at, owner_id, communit
 const byCreated = (a: { createdAt: string }, b: { createdAt: string }) =>
   new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
 
-export const toComment = (c: CommentRow): Comment => ({ id: c.id, text: c.text, createdAt: c.created_at, author: toPerson(c.author) });
+const toComment = (c: CommentRow): Comment => ({ id: c.id, text: c.text, createdAt: c.created_at, author: toPerson(c.author) });
 
 const toPost = (row: PostRow, myId: string): Post => ({
   id: row.id,
@@ -683,7 +638,6 @@ const toPost = (row: PostRow, myId: string): Post => ({
 
 const POSTS_LIMIT = 50;
 
-// Стена пользователя: закреплённая запись первой
 export const fetchWall = async (ownerId: string, myId: string) =>
   unwrap<PostRow[]>(
     await supabase
@@ -695,9 +649,6 @@ export const fetchWall = async (ownerId: string, myId: string) =>
       .limit(POSTS_LIMIT),
   ).map((row) => toPost(row, myId));
 
-// Лента: записи на стенах ownerIds (друзья и я); null — записи всех пользователей
-// Лента: записи на стенах ownerIds (друзья и я) и в сообществах communityIds;
-// ownerIds = null — записи всех. Предложенные новости в ленту не попадают
 export const fetchFeed = async (ownerIds: string[] | null, myId: string, communityIds: number[] = []) => {
   let request = supabase
     .from("posts")
@@ -713,7 +664,6 @@ export const fetchFeed = async (ownerIds: string[] | null, myId: string, communi
   return unwrap<PostRow[]>(await request).map((row) => toPost(row, myId));
 };
 
-// Стена сообщества: опубликованные записи или предложенные новости
 export const fetchCommunityWall = async (communityId: number, myId: string, { suggested = false } = {}) =>
   unwrap<PostRow[]>(
     await supabase
@@ -739,9 +689,7 @@ export const fetchLikedPosts = async (myId: string) => {
   return rows.map((row) => toPost(row, myId)).sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
 };
 
-// На стену человека (ownerId) или сообщества (communityId):
-// asCommunity — от имени сообщества, suggested — «предложить новость»
-export interface NewPost {
+interface NewPost {
   ownerId?: string;
   communityId?: number;
   asCommunity?: boolean;
@@ -772,7 +720,6 @@ export const deletePost = async (post: Post) => {
   if (post.image) await removeImage(post.image);
 };
 
-// Закреплённой может быть только одна запись на стене
 export const setPostPinned = async (post: Post, pinned: boolean) => {
   if (pinned) {
     const reset = supabase.from("posts").update({ pinned: false }).eq("pinned", true);
@@ -800,8 +747,6 @@ export const addPostComment = async (postId: number, text: string) =>
 export const deletePostComment = async (commentId: number) =>
   unwrap(await supabase.from("post_comments").delete().eq("id", commentId));
 
-// ---------- Фото ----------
-
 const PHOTO_FIELDS = `id, url, path, created_at, owner_id, album_id,
   likes:photo_likes(user_id),
   comments:photo_comments(id, text, created_at, author:profiles!photo_comments_author_id_fkey(${PERSON_FIELDS}))`;
@@ -818,12 +763,10 @@ const toPhoto = (row: PhotoRow, myId: string): Photo => ({
   comments: row.comments.map(toComment).sort(byCreated),
 });
 
-// Фото человека (без тех, что он загрузил в сообщества) или фото сообщества.
-// albumId: число — один альбом, 0 — «Фотографии с моей страницы» (без альбома)
 export interface PhotoSource {
   communityId?: number;
-  albumId?: number; // 0 — «Фотографии с моей страницы»
-  bookmarked?: boolean; // сохранённые в закладках
+  albumId?: number;
+  bookmarked?: boolean;
 }
 
 export const fetchPhotos = async (ownerId: string | null, myId: string, { communityId, albumId, bookmarked }: PhotoSource = {}) => {
@@ -849,7 +792,7 @@ export const addPhoto = async (myId: string, dataUrl: string, { communityId, alb
       myId,
     );
   } catch (e) {
-    await removeImage(path); // запись не создалась — файл не нужен
+    await removeImage(path);
     throw e;
   }
 };
@@ -858,8 +801,6 @@ export const deletePhoto = async (photo: Pick<Photo, "id" | "path">) => {
   unwrap(await supabase.from("photos").delete().eq("id", photo.id));
   await removeImage(photo.path);
 };
-
-// ---------- Фотоальбомы ----------
 
 const ALBUM_FIELDS = "id, owner_id, title, description, privacy, cover_photo_id, created_at";
 
@@ -878,11 +819,6 @@ export const fetchAlbums = async (ownerId: string) =>
     await supabase.from("photo_albums").select(ALBUM_FIELDS).eq("owner_id", ownerId).order("created_at", { ascending: false }),
   ).map(toAlbum);
 
-export const fetchAlbum = async (id: number | string) => {
-  const row = unwrap<AlbumRow | null>(await supabase.from("photo_albums").select(ALBUM_FIELDS).eq("id", Number(id)).maybeSingle());
-  return row && toAlbum(row);
-};
-
 export interface AlbumData {
   title: string;
   description?: string;
@@ -898,14 +834,12 @@ export const saveAlbum = async ({ id, title, description, privacy }: Pick<Album,
 export const setAlbumCover = async (albumId: number, photoId: number) =>
   unwrap(await supabase.from("photo_albums").update({ cover_photo_id: photoId }).eq("id", albumId));
 
-// Альбом удаляется вместе с фото (в базе — каскадом), файлы убираем сами
 export const deleteAlbum = async (album: Album, photos: Photo[]) => {
   unwrap(await supabase.from("photo_albums").delete().eq("id", album.id));
   const paths = photos.map((p) => p.path).filter(Boolean);
   if (paths.length) await supabase.storage.from(BUCKET).remove(paths);
 };
 
-// Перенести фото в альбом (null — на «мою страницу»)
 export const movePhotos = async (photoIds: number[], albumId: number | null) =>
   unwrap(await supabase.from("photos").update({ album_id: albumId }).in("id", photoIds));
 
@@ -928,13 +862,10 @@ export const addPhotoComment = async (photoId: number, text: string) =>
 export const deletePhotoComment = async (commentId: number) =>
   unwrap(await supabase.from("photo_comments").delete().eq("id", commentId));
 
-// ---------- Вложения в сообщениях (закрытое хранилище chat) ----------
-
 const CHAT_BUCKET = "chat";
-export const MAX_VIDEO_MB = 50;
-export const MAX_FILE_MB = MAX_VIDEO_MB; // общий лимит хранилища chat — и для видео, и для музыки
+const MAX_VIDEO_MB = 50;
+export const MAX_FILE_MB = MAX_VIDEO_MB;
 
-// Тип вложения по файлу: image | video | audio | null (не поддерживается)
 export const attachmentKind = (file: File): "image" | "video" | "audio" | null =>
   file.type.startsWith("image/")
     ? "image"
@@ -944,13 +875,9 @@ export const attachmentKind = (file: File): "image" | "video" | "audio" | null =
         ? "audio"
         : null;
 
-// Название трека из имени файла: «Кино - Группа крови.mp3» → «Кино - Группа крови»
 export const trackTitle = (fileName: string) => fileName.replace(/\.[^.]+$/, "").slice(0, 200);
-const LINK_TTL = 60 * 60 * 24; // временная ссылка на файл живёт сутки
+const LINK_TTL = 60 * 60 * 24;
 
-// Фото сжимаем (кроме GIF — иначе пропадёт анимация), видео и музыку загружаем как есть.
-// Путь <я>/<собеседник>/… — по нему правила хранилища пускают только нас двоих
-// kind: "voice" — голосовое с микрофона (тип у файла audio/*, но показываем иначе, чем музыку)
 export const uploadChatFile = async (
   myId: string,
   peerId: string,
@@ -963,7 +890,6 @@ export const uploadChatFile = async (
   let name: string | null = null;
   const kind = forcedKind ?? attachmentKind(file);
   if (kind === "voice") {
-    // В MP3 — чтобы голосовое слышали все, в том числе на iPhone. Не вышло — отправляем как записали
     try {
       const { voiceToMp3 } = await import("./voiceMp3");
       blob = await voiceToMp3(file);
@@ -995,7 +921,6 @@ export const uploadChatFile = async (
   const path = `${myId}/${peerId}/${crypto.randomUUID()}.${ext}`;
   unwrap(
     await supabase.storage.from(CHAT_BUCKET).upload(path, blob, {
-      // без параметров вроде ";codecs=opus" — хранилище сверяет только сам тип
       contentType: (blob.type || file.type || (type === "audio" ? "audio/mpeg" : "")).split(";")[0] || undefined,
       cacheControl: "31536000",
     }),
@@ -1003,7 +928,6 @@ export const uploadChatFile = async (
   return { path, type, name };
 };
 
-// Временные ссылки на вложения: { путь: ссылка }
 export const getChatFileUrls = async (paths: string[]): Promise<Record<string, string>> => {
   if (!paths.length) return {};
   const data = unwrap<{ path: string | null; signedUrl: string }[]>(await supabase.storage.from(CHAT_BUCKET).createSignedUrls(paths, LINK_TTL));
@@ -1012,10 +936,7 @@ export const getChatFileUrls = async (paths: string[]): Promise<Record<string, s
 
 export const removeChatFile = (path: string) => supabase.storage.from(CHAT_BUCKET).remove([path]);
 
-// ---------- «Поделиться»: одна запись, одно фото — для карточки в чате ----------
-
 export const fetchPost = async (id: number | string, myId: string) => {
-  // id приходит из сообщения строкой — у записей и фото он числовой
   const row = unwrap<PostRow | null>(await supabase.from("posts").select(POST_FIELDS).eq("id", Number(id)).maybeSingle());
   return row && toPost(row, myId);
 };
@@ -1031,21 +952,14 @@ export const fetchPhoto = async (id: number | string): Promise<SharedPhoto | nul
   return row && { id: row.id, src: row.url, createdAt: row.created_at, owner: toPerson(row.owner) };
 };
 
-// ---------- Удаление сообщений ----------
-
-// «У себя» — скрыть только для меня (у собеседника сообщение останется)
 export const deleteMessageForMe = async (id: number) => unwrap(await supabase.rpc("delete_message_for_me", { p_id: id }));
 
-// «Очистить историю» — вся переписка скрывается только у меня
 export const clearChatForMe = async (peerId: string) => unwrap<number>(await supabase.rpc("clear_chat_for_me", { p_peer: peerId }));
 
-// «У всех» — удалить совсем; файл вложения тоже удаляем
 export const deleteMessageForAll = async (id: number) => {
   const path = unwrap<string | null>(await supabase.rpc("delete_message_for_all", { p_id: id }));
   if (path) await removeChatFile(path).catch(() => { });
 };
-
-// ---------- Музыка ----------
 
 const MUSIC_BUCKET = "music";
 export const MAX_AUDIO_MB = 50;
@@ -1062,14 +976,12 @@ const toAudio = (row: AudioRow): Track => ({
   createdAt: row.created_at,
 });
 
-// «Исполнитель - Название.mp3» → { artist, title }
 export const parseTrackName = (fileName: string) => {
   const base = fileName.replace(/\.[^.]+$/, "").replace(/_/g, " ").trim();
   const match = base.match(/^(.+?)\s+[-–—]\s+(.+)$/);
   return match ? { artist: match[1].trim().slice(0, 100), title: match[2].trim().slice(0, 150) } : { artist: "", title: base.slice(0, 150) };
 };
 
-// «Моя музыка» человека: свои и добавленные треки, новые сверху
 export const fetchUserMusic = async (userId: string): Promise<Track[]> =>
   unwrap<{ audio: AudioRow | null }[]>(
     await supabase
@@ -1081,7 +993,6 @@ export const fetchUserMusic = async (userId: string): Promise<Track[]> =>
     .filter((r) => r.audio)
     .map((r) => toAudio(r.audio!));
 
-// Поиск по всей музыке; без запроса — новые треки
 export const searchAudios = async (query: string): Promise<Track[]> => {
   let request = supabase.from("audios").select(AUDIO_FIELDS).order("created_at", { ascending: false }).limit(100);
   const q = query.trim().replace(/[%_,()]/g, "");
@@ -1094,7 +1005,6 @@ export const fetchAudio = async (id: number | string) => {
   return row && toAudio(row);
 };
 
-// Файл → бакет music → запись о треке → сразу в «Мою музыку»
 export interface TrackInfo {
   artist: string;
   title: string;
@@ -1137,7 +1047,6 @@ export const removeFromMyMusic = async (myId: string, audioId: number) =>
 export const saveAudio = async ({ id, artist, title }: Pick<Track, "id" | "artist" | "title">) =>
   unwrap(await supabase.from("audios").update({ artist, title }).eq("id", id));
 
-// Удалить трек совсем (только загрузивший): пропадёт у всех и из плейлистов
 export const deleteAudio = async (audio: Track) => {
   unwrap(await supabase.from("audios").delete().eq("id", audio.id));
   await supabase.storage.from(MUSIC_BUCKET).remove([audio.path]);
@@ -1189,8 +1098,6 @@ export const addToPlaylist = async (playlistId: number, audioId: number) => {
 export const removeFromPlaylist = async (playlistId: number, audioId: number) =>
   unwrap(await supabase.from("playlist_tracks").delete().eq("playlist_id", playlistId).eq("audio_id", audioId));
 
-// ---------- Видео ----------
-
 const VIDEO_BUCKET = "videos";
 export const MAX_UPLOAD_VIDEO_MB = 50;
 const VIDEO_FIELDS = `id, owner_id, title, description, duration, width, height, url, path, poster_url, poster_path, views, created_at,
@@ -1218,7 +1125,6 @@ const toVideo = (row: VideoRow, myId: string): Video => ({
   commentsCount: row.comments?.[0]?.count ?? 0,
 });
 
-// «Мои видео» человека: загруженные и добавленные, новые сверху
 export const fetchUserVideos = async (userId: string, myId: string): Promise<Video[]> =>
   unwrap<{ video: VideoRow | null }[]>(
     await supabase
@@ -1242,7 +1148,6 @@ export const fetchVideo = async (id: number | string, myId: string) => {
   return row && toVideo(row, myId);
 };
 
-// Файл и превью → бакет videos → запись → сразу в «Мои видео»
 export interface VideoInfo {
   title: string;
   description?: string;
@@ -1318,10 +1223,7 @@ export const addVideoComment = async (videoId: number, text: string) =>
 export const deleteVideoComment = async (commentId: number) =>
   unwrap(await supabase.from("video_comments").delete().eq("id", commentId));
 
-// Засчитать просмотр (каждый зритель — один раз) → новое число просмотров
 export const viewVideo = async (videoId: number) => unwrap<number>(await supabase.rpc("view_video", { v: videoId }));
-
-// ---------- Уведомления ----------
 
 const NOTIFICATION_FIELDS = `id, type, text, created_at, read_at,
   actor:profiles!notifications_actor_id_fkey(${PERSON_FIELDS}),
@@ -1380,7 +1282,6 @@ export const fetchNotification = async (id: number) => {
   return row && toNotification(row);
 };
 
-// Отметить прочитанными все мои непрочитанные
 export const markNotificationsRead = async (myId: string) =>
   unwrap(
     await supabase
@@ -1392,8 +1293,6 @@ export const markNotificationsRead = async (myId: string) =>
 
 export const deleteNotification = async (id: number) =>
   unwrap(await supabase.from("notifications").delete().eq("id", id));
-
-// ---------- Настройки чатов: закреплён, архив, «непрочитанный» ----------
 
 export interface ChatSetting {
   peer: string;
@@ -1436,8 +1335,6 @@ export const saveChatSetting = async (myId: string, setting: ChatSetting) =>
     ),
   );
 
-// ---------- Чёрный список ----------
-
 export interface BlockedPerson {
   person: Person;
   since: string;
@@ -1451,13 +1348,10 @@ export const fetchBlocked = async (): Promise<BlockedPerson[]> =>
       .order("created_at", { ascending: false }),
   ).map((r) => ({ person: toPerson(r.blocked), since: r.created_at }));
 
-// id тех, кто заблокировал меня
 export const fetchBlockedMe = async () => unwrap<string[]>(await supabase.rpc("blocked_me_ids"));
 
 export const blockUser = (userId: string) => rpc("block_user", { u: userId });
 export const unblockUser = (userId: string) => rpc("unblock_user", { u: userId });
-
-// ---------- Закладки ----------
 
 export type BookmarkKind = "post" | "photo" | "video" | "person" | "community";
 
@@ -1469,12 +1363,10 @@ const BOOKMARK_COLUMN: Record<BookmarkKind, string> = {
   community: "community_id",
 };
 
-// Ключ закладки: "post:12", "person:<uuid>"
 export const bookmarkKey = (kind: BookmarkKind, id: string | number) => `${kind}:${id}`;
 
 type BookmarkRow = Record<"post_id" | "photo_id" | "video_id" | "person_id" | "community_id", string | number | null>;
 
-// Все мои закладки — только ключи, чтобы в меню сразу видеть «Сохранено / Сохранить»
 export const fetchBookmarkKeys = async () =>
   unwrap<BookmarkRow[]>(
     await supabase.from("bookmarks").select("post_id, photo_id, video_id, person_id, community_id").limit(5000),
@@ -1491,7 +1383,6 @@ export const setBookmarked = async (kind: BookmarkKind, id: string | number, on:
     : unwrap(await supabase.from("bookmarks").delete().eq(column, value));
 };
 
-// id сохранённого по порядку «новые сверху»
 const bookmarkedIds = async <T extends string | number>(kind: BookmarkKind): Promise<T[]> => {
   const column = BOOKMARK_COLUMN[kind];
   return unwrap<Record<string, T>[]>(
@@ -1499,7 +1390,6 @@ const bookmarkedIds = async <T extends string | number>(kind: BookmarkKind): Pro
   ).map((r) => r[column]);
 };
 
-// Удалённое или скрытое от меня (RLS) просто не придёт — в списке его не будет
 const inOrder = <T extends { id: string | number }>(items: T[], order: (string | number)[]) =>
   items.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
 
@@ -1510,7 +1400,7 @@ export const fetchBookmarkedPosts = async (myId: string) => {
   return inOrder(rows.map((row) => toPost(row, myId)), ids);
 };
 
-export const fetchBookmarkedPhotos = async (myId: string) => {
+const fetchBookmarkedPhotos = async (myId: string) => {
   const ids = await bookmarkedIds<number>("photo");
   if (!ids.length) return [];
   return inOrder(
@@ -1519,12 +1409,11 @@ export const fetchBookmarkedPhotos = async (myId: string) => {
   );
 };
 
-// Люди по списку id (например, владельцы сохранённых фото)
 export const fetchPeopleByIds = async (ids: string[]) =>
   ids.length
     ? unwrap<PersonRow[]>(await supabase.from("profiles").select(PERSON_FIELDS).in("id", ids))
-        .map(toPerson)
-        .filter((p): p is Person => !!p)
+      .map(toPerson)
+      .filter((p): p is Person => !!p)
     : [];
 
 export const fetchBookmarkedVideos = async (myId: string) => {
@@ -1550,5 +1439,4 @@ export const fetchBookmarkedCommunities = async () => {
   );
 };
 
-// Голосовое прослушано (отмечает только получатель — проверяет база)
 export const markVoiceListened = (messageId: number | string) => rpc("mark_voice_listened", { p_id: Number(messageId) });

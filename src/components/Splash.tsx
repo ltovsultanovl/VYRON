@@ -1,7 +1,6 @@
 import Logo from "./Logo";
 import type { ReactNode } from "react";
 
-// Заставка на весь экран: загрузка или ошибка с кнопкой «Повторить»
 export default function Splash({
   error,
   onRetry,
@@ -27,7 +26,11 @@ export default function Splash({
             )}
           </div>
         ) : (
-          <div className="chat-status__spinner" role="status" aria-label="Загрузка" />
+          <div
+            className="chat-status__spinner"
+            role="status"
+            aria-label="Загрузка"
+          />
         ))}
     </div>
   );

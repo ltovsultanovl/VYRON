@@ -12,7 +12,6 @@ import { useSnackbar } from "./components/Snackbar";
 const STORAGE_FULL_MESSAGE =
   "В браузере закончилось место — последние изменения пропадут после перезагрузки";
 
-// Закрывает попап по клику снаружи элемента ref и по Esc
 export function useDismiss(ref: RefObject<HTMLElement | null>, open: boolean, onClose: () => void) {
   useEffect(() => {
     if (!open) return;
@@ -29,8 +28,6 @@ export function useDismiss(ref: RefObject<HTMLElement | null>, open: boolean, on
   }, [ref, open, onClose]);
 }
 
-// Выпадающее меню: ref вешается на обёртку (кнопка + меню),
-// клик снаружи и Esc закрывают его
 export function useDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -40,7 +37,6 @@ export function useDropdown() {
   return { open, ref, close, toggle };
 }
 
-// Блокирует прокрутку страницы, пока компонент на экране (модалки, просмотр фото)
 export function useScrollLock() {
   useEffect(() => {
     const overflow = document.body.style.overflow;
@@ -51,8 +47,6 @@ export function useScrollLock() {
   }, []);
 }
 
-// Скрытый <input type="file">: open() открывает диалог выбора,
-// input нужно отрендерить где угодно. onPick получает массив файлов
 export function useFilePicker({
   accept,
   multiple = false,
@@ -76,7 +70,7 @@ export function useFilePicker({
     hidden: true,
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = [...(e.target.files ?? [])];
-      e.target.value = ""; // чтобы тот же файл можно было выбрать ещё раз
+      e.target.value = "";
       if (files.length) onPickRef.current(files);
     },
   });
@@ -85,8 +79,6 @@ export function useFilePicker({
   return { open, input };
 }
 
-// Перетаскивание файлов на элемент: [dragging, props] — props вешаются на элемент.
-// relatedTarget-проверка убирает мигание подсветки над дочерними элементами
 export function useFileDrop(onDrop: (files: File[]) => void) {
   const [dragging, setDragging] = useState(false);
 
@@ -109,8 +101,6 @@ export function useFileDrop(onDrop: (files: File[]) => void) {
   return [dragging, props] as const;
 }
 
-// useState, который переживает перезагрузку страницы (хранится в localStorage).
-// revive(saved) — привести старое сохранение к текущему формату данных
 export function useStoredState<T>(key: string, initial: T, { revive }: { revive?: (saved: unknown) => T } = {}) {
   const showSnackbar = useSnackbar();
   const failedRef = useRef(false);
@@ -124,7 +114,6 @@ export function useStoredState<T>(key: string, initial: T, { revive }: { revive?
     }
   });
 
-  // Не смогли сохранить — предупреждаем один раз, пока запись снова не пройдёт
   useEffect(() => {
     try {
       localStorage.setItem(key, JSON.stringify(value));
@@ -138,13 +127,10 @@ export function useStoredState<T>(key: string, initial: T, { revive }: { revive?
   return [value, setValue] as const;
 }
 
-// ---------- Запись голосового сообщения ----------
-
 const VOICE_MIME_TYPES = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
 const WAVEFORM_BARS = 48;
 const SAMPLE_MS = 100;
 
-// Сжимаем громкость, снятую каждые 100 мс, до 48 столбиков 0..100 — для рисования волны
 const toWaveform = (levels: number[]) => {
   if (!levels.length) return Array(WAVEFORM_BARS).fill(0);
   const bars = Array.from({ length: WAVEFORM_BARS }, (_, i) => {
@@ -159,8 +145,6 @@ const toWaveform = (levels: number[]) => {
 export const voiceRecordingSupported = () =>
   typeof window !== "undefined" && !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined";
 
-// Запись с микрофона: start() → stop() вернёт { blob, duration, waveform }; cancel() — выбросить запись.
-// levels — последние значения громкости для «живой» волны во время записи
 interface RecordingSession {
   stream: MediaStream;
   recorder: MediaRecorder;
@@ -168,7 +152,7 @@ interface RecordingSession {
   audioContext: AudioContext;
   timer: ReturnType<typeof setInterval>;
   samples: number[];
-  recorded: number; // мс записи без пауз
+  recorded: number;
   lastTick: number;
   paused: boolean;
 }
@@ -197,7 +181,6 @@ export function useVoiceRecorder({ maxSeconds = 300, onLimit }: { maxSeconds?: n
     setLevels([]);
   }, []);
 
-  // Микрофон освобождаем, даже если окно закрыли посреди записи
   useEffect(() => cleanup, [cleanup]);
 
   const start = useCallback(async () => {
@@ -208,7 +191,6 @@ export function useVoiceRecorder({ maxSeconds = 300, onLimit }: { maxSeconds?: n
     const chunks: Blob[] = [];
     recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
 
-    // Громкость для волны: анализатор считает средний уровень сигнала
     const audioContext = new AudioContext();
     const analyser = audioContext.createAnalyser();
     analyser.fftSize = 512;
@@ -221,7 +203,7 @@ export function useVoiceRecorder({ maxSeconds = 300, onLimit }: { maxSeconds?: n
       if (!s) return;
       const now = Date.now();
       if (s.paused) {
-        s.lastTick = now; // на паузе время и волна стоят
+        s.lastTick = now;
         return;
       }
       s.recorded += now - s.lastTick;
@@ -269,7 +251,6 @@ export function useVoiceRecorder({ maxSeconds = 300, onLimit }: { maxSeconds?: n
     cleanup();
   }, [cleanup]);
 
-  // Пауза и продолжение — как в VK, когда запись закреплена
   const pause = useCallback(() => {
     const s = session.current;
     if (!s || s.paused || s.recorder.state !== "recording") return;
@@ -292,7 +273,6 @@ export function useVoiceRecorder({ maxSeconds = 300, onLimit }: { maxSeconds?: n
   return { recording, paused, seconds, levels, start, stop, cancel, pause, resume };
 }
 
-// Видна ли вкладка сейчас: свернули окно или переключились на другую вкладку — false
 export function usePageVisible() {
   const [visible, setVisible] = useState(() => document.visibilityState === "visible");
   useEffect(() => {
@@ -303,7 +283,6 @@ export function usePageVisible() {
   return visible;
 }
 
-// Значение, которое обновляется не чаще раза в delay мс — чтобы не искать на каждую букву
 export function useDebounced<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -313,8 +292,6 @@ export function useDebounced<T>(value: T, delay: number): T {
   return debounced;
 }
 
-// Вернулись в сеть или на вкладку после перерыва (ноутбук спал, телефон был в кармане) —
-// повод догрузить то, что пришло, пока соединение было потеряно
 export function useResume(onResume: () => void, minAwayMs = 30_000) {
   const ref = useRef(onResume);
   useEffect(() => {

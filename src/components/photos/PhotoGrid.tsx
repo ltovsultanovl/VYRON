@@ -2,7 +2,6 @@ import { CheckIcon } from "../Icons";
 import { bg } from "../../data";
 import type { Photo } from "../../types";
 
-// Сетка фото. В режиме выбора клик отмечает фото, а не открывает его
 export default function PhotoGrid({
   photos,
   onOpen,

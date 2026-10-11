@@ -5,7 +5,6 @@ import { BlockIcon } from "../components/Icons";
 import { useBlocks } from "../context/BlocksContext";
 import { formatDate } from "../utils";
 
-// «Чёрный список» — как в настройках VK: кого вы заблокировали и кнопка «Удалить из списка»
 export default function Blacklist() {
   const { blocked, unblock } = useBlocks();
   const [query, setQuery] = useState("");

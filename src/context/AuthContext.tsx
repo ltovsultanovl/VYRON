@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, supabaseConfigured } from "../lib/supabase";
 
@@ -10,21 +17,18 @@ interface AuthValue {
 
 const AuthContext = createContext<AuthValue | null>(null);
 
-// После выхода сохранённая копия профиля (см. ProfileContext) на устройстве не нужна
 function forgetCachedProfiles() {
   try {
     Object.keys(localStorage)
       .filter((key) => key.startsWith("profile:"))
       .forEach((key) => localStorage.removeItem(key));
-  } catch {
-    // Хранилище недоступно — и кэша там нет
-  }
+  } catch {}
 }
 
-// Сессия Supabase: undefined — ещё проверяем, null — не вошёл, объект — вошёл.
-// recovering — пользователь пришёл по ссылке «Восстановить пароль» и должен задать новый
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null | undefined>(supabaseConfigured ? undefined : null);
+  const [session, setSession] = useState<Session | null | undefined>(
+    supabaseConfigured ? undefined : null,
+  );
   const [recovering, setRecovering] = useState(false);
 
   useEffect(() => {

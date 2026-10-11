@@ -1,6 +1,4 @@
-// Правое меню страницы (лента, друзья, редактирование профиля).
-// items: { label, active?, counter?, accent?, onClick? } или "separator"
-export interface SideMenuItem {
+interface SideMenuItem {
   label: string;
   active?: boolean;
   counter?: number;
@@ -8,7 +6,11 @@ export interface SideMenuItem {
   onClick?: () => void;
 }
 
-export default function SideMenu({ items }: { items: (SideMenuItem | "separator")[] }) {
+export default function SideMenu({
+  items,
+}: {
+  items: (SideMenuItem | "separator")[];
+}) {
   return (
     <div className="card side-menu">
       {items.map((item, i) =>
@@ -23,7 +25,9 @@ export default function SideMenu({ items }: { items: (SideMenuItem | "separator"
           >
             {item.label}
             {!!item.counter && item.counter > 0 && (
-              <span className={`counter ${item.accent ? "counter--accent" : ""}`}>
+              <span
+                className={`counter ${item.accent ? "counter--accent" : ""}`}
+              >
                 {item.counter}
               </span>
             )}

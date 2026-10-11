@@ -10,7 +10,6 @@ import type { Video } from "../../types";
 
 const POSTER_WIDTH = 640;
 
-// Длительность, размер и превью — кадр примерно с секунды ролика
 interface VideoProbe {
   duration: number;
   width?: number;
@@ -78,12 +77,11 @@ const probeVideo = (file: File) =>
     };
     video.onerror = () => {
       clearTimeout(timer);
-      finish({ duration: 0 }); // браузер не умеет этот кодек — загрузим без превью
+      finish({ duration: 0 });
     };
     video.src = url;
   });
 
-// Загрузка видео: файл → превью и название → загрузить
 export default function UploadVideoModal({
   onClose,
   onUploaded,

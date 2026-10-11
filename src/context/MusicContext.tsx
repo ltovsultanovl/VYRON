@@ -1,4 +1,10 @@
-import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  type ReactNode,
+} from "react";
 import type { Playlist, Track } from "../types";
 import { useSnackbar } from "../components/Snackbar";
 import { useProfile } from "./ProfileContext";
@@ -6,8 +12,6 @@ import { usePlayer } from "./PlayerContext";
 import { useResource } from "../resources";
 import * as api from "../api";
 
-// Моя библиотека: «Моя музыка» и мои плейлисты — общие для раздела «Музыка»,
-// профиля, карточек в чате (кнопки «+ / ✓» везде одинаковые)
 type PlaylistData = { title: string; description: string };
 
 interface MusicValue {
@@ -20,7 +24,10 @@ interface MusicValue {
   add: (track: Track) => Promise<void>;
   remove: (track: Track) => Promise<void>;
   upload: (file: File, info: api.TrackInfo) => Promise<Track>;
-  edit: (track: Track, data: { artist: string; title: string }) => Promise<boolean>;
+  edit: (
+    track: Track,
+    data: { artist: string; title: string },
+  ) => Promise<boolean>;
   destroy: (track: Track) => Promise<boolean>;
   playlists: Playlist[];
   playlistsStatus: "loading" | "error" | "ready";
@@ -49,11 +56,18 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const playlists = useMemo(() => lists.data ?? [], [lists.data]);
   const ids = useMemo(() => new Set(tracks.map((t) => t.id)), [tracks]);
 
-  const fail = useCallback((e: unknown, prefix: string) => showSnackbar(`${prefix}: ${api.explainError(e)}`, "error"), [showSnackbar]);
+  const fail = useCallback(
+    (e: unknown, prefix: string) =>
+      showSnackbar(`${prefix}: ${api.explainError(e)}`, "error"),
+    [showSnackbar],
+  );
 
   const add = useCallback(
     async (track: Track) => {
-      setTracks((list) => [track, ...(list ?? []).filter((t) => t.id !== track.id)]);
+      setTracks((list) => [
+        track,
+        ...(list ?? []).filter((t) => t.id !== track.id),
+      ]);
       try {
         await api.addToMyMusic(track.id);
         showSnackbar("Аудиозапись добавлена в «Мою музыку»");
@@ -80,7 +94,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     [fail, myId, setTracks, updateTracks, showSnackbar, tracks],
   );
 
-  // Загрузка одного файла; добавляем в начало «Моей музыки»
   const upload = useCallback(
     async (file: File, info: api.TrackInfo) => {
       const track = await api.uploadAudio(myId, file, info);
@@ -93,13 +106,21 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const patchEverywhere = useCallback(
     (track: Track, fn: (t: Track) => Track) => {
       updateTracks((list) => list.map((t) => (t.id === track.id ? fn(t) : t)));
-      updatePlaylists((list) => list.map((p) => ({ ...p, tracks: p.tracks.map((t) => (t.id === track.id ? fn(t) : t)) })));
+      updatePlaylists((list) =>
+        list.map((p) => ({
+          ...p,
+          tracks: p.tracks.map((t) => (t.id === track.id ? fn(t) : t)),
+        })),
+      );
     },
     [updatePlaylists, updateTracks],
   );
 
   const edit = useCallback(
-    async (track: Track, { artist, title }: { artist: string; title: string }) => {
+    async (
+      track: Track,
+      { artist, title }: { artist: string; title: string },
+    ) => {
       try {
         await api.saveAudio({ id: track.id, artist, title });
         patchEverywhere(track, (t) => ({ ...t, artist, title }));
@@ -114,14 +135,18 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     [fail, patchEverywhere, patchTrack, showSnackbar],
   );
 
-  // Удалить трек совсем (загрузивший)
   const destroy = useCallback(
     async (track: Track) => {
       try {
         await api.deleteAudio(track);
         forget(track);
         updateTracks((list) => list.filter((t) => t.id !== track.id));
-        updatePlaylists((list) => list.map((p) => ({ ...p, tracks: p.tracks.filter((t) => t.id !== track.id) })));
+        updatePlaylists((list) =>
+          list.map((p) => ({
+            ...p,
+            tracks: p.tracks.filter((t) => t.id !== track.id),
+          })),
+        );
         showSnackbar("Аудиозапись удалена");
         return true;
       } catch (e) {
@@ -132,7 +157,6 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     [fail, forget, updatePlaylists, updateTracks, showSnackbar],
   );
 
-  // ---------- Плейлисты ----------
   const createPlaylist = useCallback(
     async (data: PlaylistData) => {
       try {
@@ -152,7 +176,9 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     async (playlist: Playlist) => {
       try {
         await api.savePlaylist(playlist);
-        updatePlaylists((list) => list.map((p) => (p.id === playlist.id ? { ...p, ...playlist } : p)));
+        updatePlaylists((list) =>
+          list.map((p) => (p.id === playlist.id ? { ...p, ...playlist } : p)),
+        );
         showSnackbar("Плейлист сохранён");
         return true;
       } catch (e) {
@@ -184,7 +210,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
         showSnackbar(`Уже есть в «${playlist.title}»`, "info");
         return;
       }
-      updatePlaylists((list) => list.map((p) => (p.id === playlist.id ? { ...p, tracks: [...p.tracks, track] } : p)));
+      updatePlaylists((list) =>
+        list.map((p) =>
+          p.id === playlist.id ? { ...p, tracks: [...p.tracks, track] } : p,
+        ),
+      );
       try {
         await api.addToPlaylist(playlist.id, track.id);
         showSnackbar(`Добавлено в «${playlist.title}»`);
@@ -199,7 +229,11 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const removeFromPlaylist = useCallback(
     async (playlist: Playlist, track: Track) => {
       updatePlaylists((list) =>
-        list.map((p) => (p.id === playlist.id ? { ...p, tracks: p.tracks.filter((t) => t.id !== track.id) } : p)),
+        list.map((p) =>
+          p.id === playlist.id
+            ? { ...p, tracks: p.tracks.filter((t) => t.id !== track.id) }
+            : p,
+        ),
       );
       try {
         await api.removeFromPlaylist(playlist.id, track.id);
@@ -214,7 +248,12 @@ export function MusicProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<MusicValue>(
     () => ({
-      status: library.loading && !library.data ? "loading" : library.error ? "error" : "ready",
+      status:
+        library.loading && !library.data
+          ? "loading"
+          : library.error
+            ? "error"
+            : "ready",
       error: library.error,
       reload: library.reload,
       tracks,
@@ -226,7 +265,12 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       edit,
       destroy,
       playlists,
-      playlistsStatus: lists.loading && !lists.data ? "loading" : lists.error ? "error" : "ready",
+      playlistsStatus:
+        lists.loading && !lists.data
+          ? "loading"
+          : lists.error
+            ? "error"
+            : "ready",
       playlistsError: lists.error,
       reloadPlaylists: lists.reload,
       createPlaylist,
@@ -235,14 +279,39 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       addToPlaylist,
       removeFromPlaylist,
     }),
-    [library.loading, library.data, library.error, library.reload, tracks, ids, add, remove, upload, edit, destroy, playlists, lists.loading, lists.data, lists.error, lists.reload, createPlaylist, savePlaylist, deletePlaylist, addToPlaylist, removeFromPlaylist],
+    [
+      library.loading,
+      library.data,
+      library.error,
+      library.reload,
+      tracks,
+      ids,
+      add,
+      remove,
+      upload,
+      edit,
+      destroy,
+      playlists,
+      lists.loading,
+      lists.data,
+      lists.error,
+      lists.reload,
+      createPlaylist,
+      savePlaylist,
+      deletePlaylist,
+      addToPlaylist,
+      removeFromPlaylist,
+    ],
   );
 
-  return <MusicContext.Provider value={value}>{children}</MusicContext.Provider>;
+  return (
+    <MusicContext.Provider value={value}>{children}</MusicContext.Provider>
+  );
 }
 
 export function useMusic() {
   const context = useContext(MusicContext);
-  if (!context) throw new Error("useMusic нужно вызывать внутри <MusicProvider>");
+  if (!context)
+    throw new Error("useMusic нужно вызывать внутри <MusicProvider>");
   return context;
 }

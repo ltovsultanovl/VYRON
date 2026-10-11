@@ -6,7 +6,6 @@ import { useMusic } from "../../context/MusicContext";
 import { coverGradient } from "./format";
 import type { Track } from "../../types";
 
-// «Добавить в плейлист»: мои плейлисты + «Новый плейлист»
 export default function PlaylistPickerModal({
   track,
   onClose,

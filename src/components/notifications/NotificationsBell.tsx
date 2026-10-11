@@ -8,17 +8,21 @@ import type { Navigate } from "../../types";
 
 const PREVIEW = 8;
 
-// Колокольчик в шапке: число новых и панель с последними уведомлениями, как в VK
-export default function NotificationsBell({ onNavigate }: { onNavigate: Navigate }) {
+export default function NotificationsBell({
+  onNavigate,
+}: {
+  onNavigate: Navigate;
+}) {
   const { notifications, unread, status, markAllRead } = useNotifications();
   const menu = useDropdown();
-  // Что было непрочитанным в момент открытия — подсвечиваем, хотя уже отметили прочитанным
   const [fresh, setFresh] = useState<Set<number>>(() => new Set());
   const groups = groupNotifications(notifications).slice(0, PREVIEW);
 
   const toggle = () => {
     if (!menu.open) {
-      setFresh(new Set(notifications.filter((n) => !n.readAt).map((n) => n.id)));
+      setFresh(
+        new Set(notifications.filter((n) => !n.readAt).map((n) => n.id)),
+      );
       markAllRead();
     }
     menu.toggle();
@@ -31,9 +35,15 @@ export default function NotificationsBell({ onNavigate }: { onNavigate: Navigate
 
   return (
     <div className="notif-bell" ref={menu.ref}>
-      <button className={`icon-btn ${menu.open ? "icon-btn--active" : ""}`} title="Уведомления" onClick={toggle}>
+      <button
+        className={`icon-btn ${menu.open ? "icon-btn--active" : ""}`}
+        title="Уведомления"
+        onClick={toggle}
+      >
         <BellIcon size={28} />
-        {unread > 0 && <span className="badge">{unread > 99 ? "99+" : unread}</span>}
+        {unread > 0 && (
+          <span className="badge">{unread > 99 ? "99+" : unread}</span>
+        )}
       </button>
       {menu.open && (
         <div className="dropdown notif-panel">
@@ -45,7 +55,12 @@ export default function NotificationsBell({ onNavigate }: { onNavigate: Navigate
               </div>
             ) : groups.length ? (
               groups.map((g) => (
-                <NotificationItem key={g.key} group={g} unread={g.items.some((n) => fresh.has(n.id))} onOpen={go} />
+                <NotificationItem
+                  key={g.key}
+                  group={g}
+                  unread={g.items.some((n) => fresh.has(n.id))}
+                  onOpen={go}
+                />
               ))
             ) : (
               <div className="notif-panel__empty">
@@ -54,7 +69,10 @@ export default function NotificationsBell({ onNavigate }: { onNavigate: Navigate
               </div>
             )}
           </div>
-          <button className="notif-panel__all" onClick={() => go("#notifications")}>
+          <button
+            className="notif-panel__all"
+            onClick={() => go("#notifications")}
+          >
             Показать все
           </button>
         </div>

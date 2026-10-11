@@ -1,11 +1,16 @@
-import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  type ReactNode,
+} from "react";
 import type { Video } from "../types";
 import { useSnackbar } from "../components/Snackbar";
 import { useProfile } from "./ProfileContext";
 import { useResource } from "../resources";
 import * as api from "../api";
 
-// «Мои видео»: загруженные и добавленные к себе. Общие для раздела «Видео», профиля и чата
 interface VideoValue {
   status: "loading" | "error" | "ready";
   error: string;
@@ -15,7 +20,10 @@ interface VideoValue {
   add: (video: Video) => Promise<void>;
   remove: (video: Video) => Promise<void>;
   upload: (file: File, info: api.VideoInfo) => Promise<Video>;
-  edit: (video: Video, data: { title: string; description: string }) => Promise<boolean>;
+  edit: (
+    video: Video,
+    data: { title: string; description: string },
+  ) => Promise<boolean>;
   destroy: (video: Video) => Promise<boolean>;
   patch: (id: number, data: Partial<Video>) => void;
 }
@@ -30,11 +38,18 @@ export function VideoProvider({ children }: { children: ReactNode }) {
   const updateVideos = library.update;
   const videos = useMemo(() => library.data ?? [], [library.data]);
   const ids = useMemo(() => new Set(videos.map((v) => v.id)), [videos]);
-  const fail = useCallback((e: unknown, prefix: string) => showSnackbar(`${prefix}: ${api.explainError(e)}`, "error"), [showSnackbar]);
+  const fail = useCallback(
+    (e: unknown, prefix: string) =>
+      showSnackbar(`${prefix}: ${api.explainError(e)}`, "error"),
+    [showSnackbar],
+  );
 
   const add = useCallback(
     async (video: Video) => {
-      setVideos((list) => [video, ...(list ?? []).filter((v) => v.id !== video.id)]);
+      setVideos((list) => [
+        video,
+        ...(list ?? []).filter((v) => v.id !== video.id),
+      ]);
       try {
         await api.addToMyVideos(video.id);
         showSnackbar("Видео добавлено в «Мои видео»");
@@ -69,14 +84,19 @@ export function VideoProvider({ children }: { children: ReactNode }) {
     [myId, setVideos],
   );
 
-  // Обновить видео в списке (лайк, просмотры, название)
   const patch = useCallback(
-    (id: number, data: Partial<Video>) => updateVideos((list) => list.map((v) => (v.id === id ? { ...v, ...data } : v))),
+    (id: number, data: Partial<Video>) =>
+      updateVideos((list) =>
+        list.map((v) => (v.id === id ? { ...v, ...data } : v)),
+      ),
     [updateVideos],
   );
 
   const edit = useCallback(
-    async (video: Video, { title, description }: { title: string; description: string }) => {
+    async (
+      video: Video,
+      { title, description }: { title: string; description: string },
+    ) => {
       try {
         await api.saveVideo({ id: video.id, title, description });
         patch(video.id, { title, description });
@@ -107,7 +127,12 @@ export function VideoProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<VideoValue>(
     () => ({
-      status: library.loading && !library.data ? "loading" : library.error ? "error" : "ready",
+      status:
+        library.loading && !library.data
+          ? "loading"
+          : library.error
+            ? "error"
+            : "ready",
       error: library.error,
       reload: library.reload,
       videos,
@@ -119,14 +144,30 @@ export function VideoProvider({ children }: { children: ReactNode }) {
       destroy,
       patch,
     }),
-    [library.loading, library.data, library.error, library.reload, videos, ids, add, remove, upload, edit, destroy, patch],
+    [
+      library.loading,
+      library.data,
+      library.error,
+      library.reload,
+      videos,
+      ids,
+      add,
+      remove,
+      upload,
+      edit,
+      destroy,
+      patch,
+    ],
   );
 
-  return <VideoContext.Provider value={value}>{children}</VideoContext.Provider>;
+  return (
+    <VideoContext.Provider value={value}>{children}</VideoContext.Provider>
+  );
 }
 
 export function useVideos() {
   const context = useContext(VideoContext);
-  if (!context) throw new Error("useVideos нужно вызывать внутри <VideoProvider>");
+  if (!context)
+    throw new Error("useVideos нужно вызывать внутри <VideoProvider>");
   return context;
 }

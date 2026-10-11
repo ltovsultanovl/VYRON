@@ -12,7 +12,6 @@ import type { Person, Video } from "../../types";
 
 const PREVIEW = 4;
 
-// Вкладка «Видео» в профиле: последние ролики человека и ссылка на все
 export default function VideoTab({
   owner,
   isMe,

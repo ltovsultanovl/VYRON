@@ -48,7 +48,6 @@ const membersWord = (c: Pick<CommunityType, "isPage">, n: number) =>
 const siteHref = (site: string) =>
   /^https?:\/\//.test(site) ? site : `https://${site}`;
 
-// ---------- «Информация» ----------
 type InfoRow = { icon: Icon; value: ReactNode };
 
 function InfoCard({ community }: { community: CommunityType }) {
@@ -97,7 +96,6 @@ function InfoCard({ community }: { community: CommunityType }) {
   );
 }
 
-// ---------- Фотографии сообщества ----------
 function CommunityPhotos({
   community,
   canPublish,
@@ -147,7 +145,7 @@ function CommunityPhotos({
     onPick: upload,
   });
 
-  if (!canPublish && album.data && !album.photos.length) return null; // пустой альбом гостям не показываем
+  if (!canPublish && album.data && !album.photos.length) return null;
 
   const tiles = (list: Photo[], onOpen: (index: number) => void) =>
     list.map((p, i) => (
@@ -245,7 +243,6 @@ function CommunityPhotos({
   );
 }
 
-// ---------- Стена: записи и предложенные новости ----------
 function CommunityWall({
   community,
   role,
@@ -260,7 +257,6 @@ function CommunityWall({
   const [asCommunity, setAsCommunity] = useState(true);
   const published = usePosts({ community: community.id });
   const suggested = usePosts({ community: community.id, suggested: true });
-  // Одобренная новость переезжает из «Предложенных» в записи сообщества
   const approveSuggested = suggested.approve;
   const reloadPublished = published.reload;
   const approve = useCallback(
@@ -275,8 +271,6 @@ function CommunityWall({
 
   const isMember = !!role;
   const openWall = !community.isPage && community.wall === "open";
-  // Кто что видит в поле записи: руководители — от имени сообщества (или от себя на открытой стене),
-  // участники открытой стены — от себя, остальные участники — «Предложить новость»
   const mode = canPublish
     ? asCommunity || !openWall
       ? "community"
@@ -366,7 +360,6 @@ function CommunityWall({
   );
 }
 
-// ---------- Участники и контакты (правая колонка) ----------
 function MembersCard({ community, members }: { community: CommunityDetails; members: Resource<CommunityMember[]> }) {
   const [allOpen, setAllOpen] = useState(false);
   const list = members.data ?? [];
@@ -460,7 +453,6 @@ function ContactsCard({ members }: { members: Resource<CommunityMember[]> }) {
   );
 }
 
-// ---------- Страница сообщества ----------
 export default function Community({ id, onNavigate }: { id: number; onNavigate: Navigate }) {
   const { myId } = useProfile();
   const {
@@ -475,7 +467,6 @@ export default function Community({ id, onNavigate }: { id: number; onNavigate: 
   const { isSaved, toggle: toggleBookmark } = useBookmarks();
   const [modal, setModal] = useState<"share" | "invite" | null>(null);
   const status = statusIn(id);
-  // Перечитываем сообщество, когда меняется моё участие (вступил, вышел, приняли заявку)
   const info = useResource(
     () => fetchCommunity(id, myId),
     [id, myId, status, roleIn(id)],

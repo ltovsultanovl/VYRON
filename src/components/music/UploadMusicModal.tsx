@@ -7,7 +7,6 @@ import { useFileDrop, useFilePicker } from "../../hooks";
 import { explainError, MAX_AUDIO_MB, parseTrackName } from "../../api";
 import { formatDuration } from "./format";
 
-// Длительность из заголовка файла
 const readDuration = (file: File) =>
   new Promise<number>((resolve) => {
     const url = URL.createObjectURL(file);
@@ -21,7 +20,6 @@ const readDuration = (file: File) =>
     probe.src = url;
   });
 
-// Загрузка музыки: выбрать файлы → поправить «Исполнитель / Название» → загрузить
 interface UploadItem {
   key: string;
   file: File;
@@ -88,7 +86,6 @@ export default function UploadMusicModal({
   });
   const [dragOver, dropProps] = useFileDrop(addFiles);
 
-  // Файлы, перетащенные на страницу «Музыка», сразу попадают в список
   const [initial] = useState(initialFiles);
   useEffect(() => {
     if (initial.length) addFiles(initial);

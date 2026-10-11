@@ -4,7 +4,6 @@ import { formatDate } from "../../utils";
 import { formatDuration, viewsLabel } from "./format";
 import type { Video } from "../../types";
 
-// Карточка ролика: превью с длительностью, название, просмотры и дата
 export default function VideoCard({
   video,
   onOpen,
